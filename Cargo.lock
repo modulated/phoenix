@@ -169,6 +169,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "phoenix"
+version = "0.1.0"
+dependencies = [
+ "bitvec",
+ "clap",
+ "dbg_hex",
+ "log",
+ "serde",
+ "serde_json",
+ "simplelog",
+]
+
+[[package]]
 name = "powerfmt"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -244,19 +257,6 @@ dependencies = [
  "log",
  "termcolor",
  "time",
-]
-
-[[package]]
-name = "sixtyeightkay"
-version = "0.1.0"
-dependencies = [
- "bitvec",
- "clap",
- "dbg_hex",
- "log",
- "serde",
- "serde_json",
- "simplelog",
 ]
 
 [[package]]
