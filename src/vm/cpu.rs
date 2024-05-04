@@ -1,38 +1,20 @@
 use super::mmu::Mmu;
+use crate::types::sign_transmute;
 
-#[allow(dead_code)] // TODO: remove
-#[derive(Default,Debug)]
+#[derive(Default, Debug)]
 pub(super) struct Cpu<'a> {
     pub(super) sr: u16,
     pub(super) pc: usize,
-    d0: u32,
-    d1: u32,
-    d2: u32,
-    d3: u32,
-    d4: u32,
-    d5: u32,
-    d6: u32,
-    d7: u32,
-    a0: usize,
-    a1: usize,
-    a2: usize,
-    a3: usize,
-    a4: usize,
-    a5: usize,
-    a6: usize,
-    usp: usize,
-    ssp: usize,   
-    mmu: Mmu<'a>, 
+    pub data_registers: [u32; 8],
+    pub addr_registers: [u32; 8],
+    pub mmu: Mmu<'a>,
 }
 
 impl<'a> Cpu<'a> {
-    
-
     pub fn run(&mut self) {
         loop {
-            println!("PC: {:#022x}",self.pc);            
-            let inst = self.mmu.get_word(self.pc);
-            self.pc += 2;
+            println!("PC: {:#010x}", self.pc);
+            let inst = self.fetch_word();
             self.exec(inst)
         }
     }
@@ -43,6 +25,16 @@ impl<'a> Cpu<'a> {
 
     pub fn fetch_word(&mut self) -> u16 {
         self.pc += 2;
-        self.mmu.get_word(self.pc - 2)
+        self.mmu.read_word(self.pc - 2)
+    }
+
+    pub fn fetch_signed_word(&mut self) -> i16 {
+        self.pc += 2;
+        sign_transmute(self.mmu.read_word(self.pc - 2))
+    }
+
+    pub fn fetch_long(&mut self) -> u32 {
+        self.pc += 4;
+        self.mmu.read_long(self.pc - 4)
     }
 }

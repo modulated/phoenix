@@ -109,6 +109,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "acbf1af155f9b9ef647e42cdc158db4b64a1b61f743629225fde6f3e0be2a7c7"
 
 [[package]]
+name = "dbg_hex"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "35df069ad4872b5d65ee7f5e37d12ab629834b1e162b3292a71f30ba7e8884ee"
+
+[[package]]
 name = "deranged"
 version = "0.3.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -246,6 +252,7 @@ version = "0.1.0"
 dependencies = [
  "bitvec",
  "clap",
+ "dbg_hex",
  "log",
  "serde",
  "serde_json",

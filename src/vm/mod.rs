@@ -1,11 +1,12 @@
 mod cpu;
 use cpu::Cpu;
+mod ea;
 mod isa;
 mod mmu;
 
 #[derive(Debug, Default)]
 pub struct VM<'a> {
-    cpu: Cpu<'a>    
+    cpu: Cpu<'a>,
 }
 
 impl<'a> VM<'a> {
