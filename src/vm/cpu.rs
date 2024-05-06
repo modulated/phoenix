@@ -73,7 +73,7 @@ impl<'a> Cpu<'a> {
     pub fn read_ar(&self, reg: u8) -> u32 {
         assert!(reg < 8, "Indexing into non-existant Address Register");
         if reg == 7 {
-            if self.is_supervisor_mode(){
+            if self.is_supervisor_mode() {
                 self.ssp
             } else {
                 self.usp
@@ -114,6 +114,52 @@ impl<'a> Cpu<'a> {
     pub fn write_pc(&mut self, pc: u32) {
         self.pc = pc.try_into().unwrap();
     }
+
+    pub fn read_sr(&self, sr: StatusRegister) -> bool {
+        (self.sr & sr as u16) == sr as u16
+    }
+
+    pub fn write_sr(&mut self, sr: StatusRegister, val: bool) {
+        if val {
+            self.sr |= sr as u16;
+        } else {
+            self.sr &= !(sr as u16);
+        }
+    }
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum StatusRegister {
+    C = 1,
+    V = 2,
+    Z = 4,
+    N = 8,
+    X = 16,
+}
+
+#[cfg(test)]
+mod test_sr_bitlogic {
+    use super::{Cpu, StatusRegister as SR};
+
+    #[test]
+    fn test_x() {
+        let mut cpu = Cpu::default();
+        assert!(!cpu.read_sr(SR::X));
+        cpu.write_sr(SR::X, true);
+        assert!(cpu.read_sr(SR::X));
+        cpu.write_sr(SR::X, false);
+        assert!(!cpu.read_sr(SR::X));
+    }
+
+    #[test]
+    fn test_c() {
+        let mut cpu = Cpu::default();
+        assert!(!cpu.read_sr(SR::C));
+        cpu.write_sr(SR::C, true);
+        assert!(cpu.read_sr(SR::C));
+        cpu.write_sr(SR::C, false);
+        assert!(!cpu.read_sr(SR::C));
+    }
 }
 
 #[cfg(test)]
@@ -124,7 +170,7 @@ mod test_ea_long {
     use super::Cpu;
 
     const ADDR_REG: [u32; 7] = [
-        0x00001000, 0x000000A0, 0x00000050, 0x33123456, 0x00000000, 0x00000000, 0x0000008C,        
+        0x00001000, 0x000000A0, 0x00000050, 0x33123456, 0x00000000, 0x00000000, 0x0000008C,
     ];
     const DATA_REG: [u32; 8] = [
         0x12345678, 0x00000004, 0x00000001, 0xFF00FF00, 0x00FF00FF, 0xD5333333, 0x88888888,
@@ -251,7 +297,7 @@ mod test_ea_long {
         };
         let ea = cpu.get_ea_long(AddressRegisterIndirectIndex(2));
         assert_eq!(ea, 0xFDBCD6FA);
-    }    
+    }
 
     #[test]
     fn test_pc_relative_displacement() {
@@ -317,7 +363,7 @@ mod test_ea_long {
     fn test_immediate() {
         let mut cpu = Cpu {
             sr: 0x0000,
-            pc: 0x000000A4,            
+            pc: 0x000000A4,
             data_registers: DATA_REG,
             addr_registers: ADDR_REG,
             usp: 0,

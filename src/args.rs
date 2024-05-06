@@ -5,5 +5,5 @@ pub struct Args {
     #[arg(long = "log", short, default_value = "warn")]
     pub log_level: log::LevelFilter,
     #[arg(long = "pc", short, default_value = "0400")]
-    pub program_counter: String
+    pub program_counter: String,
 }

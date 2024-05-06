@@ -10,8 +10,8 @@ pub struct VM<'a> {
 }
 
 impl<'a> VM<'a> {
-    pub fn new() -> Self {        
-        Default::default()        
+    pub fn new() -> Self {
+        Default::default()
     }
 
     pub fn load(&mut self, rom: &[u8]) {
