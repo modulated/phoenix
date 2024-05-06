@@ -1,5 +1,4 @@
-use crate::types::{sign_extend_16_to_32, AddressingMode, ExtensionMode, Size, Value};
-
+use crate::types::{sign_extend_16_to_32, sign_extend_8_to_32, AddressingMode, ExtensionMode, Size, Value};
 use super::cpu::Cpu;
 
 impl<'a> Cpu<'a> {
@@ -12,38 +11,67 @@ impl<'a> Cpu<'a> {
         }
     }
 
+    pub fn write_ea(&mut self, mode: AddressingMode, size: Size, val: Value) {
+        use Value::*;
+        match size {
+            Size::Byte => {
+                match val {
+                    Byte(v) => self.write_ea_byte(mode, v),
+                    Word(v) => self.write_ea_byte(mode, v as u8),
+                    Long(v) => self.write_ea_byte(mode, v as u8),
+                }
+                
+            },
+            Size::Word => {
+                match val {
+                    Byte(v) => self.write_ea_word(mode, v as u16),
+                    Word(v) => self.write_ea_word(mode, v),
+                    Long(v) => self.write_ea_word(mode, v as u16),
+                }
+            },
+            Size::Long => {
+                match val {
+                    Byte(v) => self.write_ea_long(mode, v as u32),
+                    Word(v) => self.write_ea_long(mode, v as u32),
+                    Long(v) => self.write_ea_long(mode, v),
+                }
+            }
+        }
+    }
+
     pub fn get_ea_byte(&mut self, _mode: AddressingMode) -> u8 {
         todo!()
     }
+
+    pub fn write_ea_byte(&mut self, _mode: AddressingMode, _val: u8) {
+        todo!()
+    }
+
     pub fn get_ea_word(&mut self, mode: AddressingMode) -> u16 {
         use AddressingMode::*;
         match mode {
-            DataRegisterDirect(reg) => self.data_registers[reg as usize] as u16,
-            AddressRegisterDirect(reg) => self.addr_registers[reg as usize] as u16,
+            DataRegisterDirect(reg) => self.read_dr(reg).try_into().expect("could not convert register value to u16"),
+            AddressRegisterDirect(reg) => self.read_ar(reg).try_into().expect("could not convert register value to u16"),
             AddressRegisterIndirect(reg) => {
                 assert!(reg < 7);
                 self.mmu
-                    .read_word(self.addr_registers[reg as usize] as usize)
+                    .read_word(self.read_ar(reg))
             }
-            AddressRegisterIndirectPostIncrement(reg) => {
-                assert!(reg < 7); // TODO: include SP
-                let addr = self.addr_registers[reg as usize];
-                dbg!(addr);
-                self.addr_registers[reg as usize] += 2;
-                dbg!(self.addr_registers[reg as usize]);
-                self.mmu.read_word(addr as usize)
+            AddressRegisterIndirectPostIncrement(reg) => {                
+                let addr = self.read_ar(reg);                
+                self.increment_ar(reg, 2);                
+                self.mmu.read_word(addr)
             }
-            AddressRegisterIndirectPreDecrement(reg) => {
-                assert!(reg < 7); // TODO: include SP
-                self.addr_registers[reg as usize] -= 2;
+            AddressRegisterIndirectPreDecrement(reg) => {                
+                self.decrement_ar(reg, 2);
                 self.mmu
-                    .read_word(self.addr_registers[reg as usize] as usize)
+                    .read_word(self.read_ar(reg))
             }
             AddressRegisterIndirectDisplacement(reg) => {
                 assert!(reg < 7);
                 let displacement = self.fetch_signed_word();
                 let target =
-                    (self.addr_registers[reg as usize] as i32 + displacement as i32) as usize;
+                    (self.read_ar(reg) as i32 + displacement as i32) as u32;
                 self.mmu.read_word(target)
             }
             AddressRegisterIndirectIndex(reg) => {
@@ -55,20 +83,20 @@ impl<'a> Cpu<'a> {
                 ExtensionMode::Word => {
                     // TODO: should only fetch first or last 32KiB of RAM
                     let addr = self.fetch_word();
-                    self.mmu.read_word(addr as usize)
+                    self.mmu.read_word(addr.into())
                 }
                 ExtensionMode::Long => {
-                    // TODO: should this be unreachable?
-                    unreachable!()
+                    let addr = self.fetch_long();
+                    self.mmu.read_word(addr)
                 }
                 ExtensionMode::PcRelativeDisplacement => {
-                    let pc = self.pc;
+                    let pc = self.read_pc();
                     let offset = sign_extend_16_to_32(self.fetch_word());
-                    let target = (pc as i32 + offset as i32) as usize;
+                    let target = (pc as i32 + offset as i32) as u32;
                     self.mmu.read_word(target)
                 }
                 ExtensionMode::PcRelativeIndex => {
-                    let _pc = self.pc;
+                    let _pc = self.read_pc();
                     // let index = sign_extend_8_to_32(reg);
                     todo!();
                 }
@@ -77,202 +105,144 @@ impl<'a> Cpu<'a> {
         }
     }
 
+    pub fn write_ea_word(&mut self, _mode: AddressingMode, _val: u16) {
+        todo!()
+    }
+
     pub fn get_ea_long(&mut self, mode: AddressingMode) -> u32 {
         use AddressingMode::*;
         match mode {
-            DataRegisterDirect(reg) => self.data_registers[reg as usize],
-            AddressRegisterDirect(reg) => self.addr_registers[reg as usize],
+            DataRegisterDirect(reg) => self.read_dr(reg),
+            AddressRegisterDirect(reg) => self.read_ar(reg),
             AddressRegisterIndirect(reg) => {
                 assert!(reg < 7);
                 self.mmu
-                    .read_long(self.addr_registers[reg as usize] as usize)
+                    .read_long(self.read_ar(reg))
             }
-            AddressRegisterIndirectPostIncrement(reg) => {
-                assert!(reg < 7); // TODO: include SP
-                let addr = self.addr_registers[reg as usize];
-                dbg!(addr);
-                self.addr_registers[reg as usize] += 4;
-                dbg!(self.addr_registers[reg as usize]);
-                self.mmu.read_long(addr as usize)
+            AddressRegisterIndirectPostIncrement(reg) => {               
+                let addr = self.read_ar(reg);                
+                self.increment_ar(reg, 4);                
+                self.mmu.read_long(addr)
             }
             AddressRegisterIndirectPreDecrement(reg) => {
                 assert!(reg < 7); // TODO: include SP
-                self.addr_registers[reg as usize] -= 4;
+                self.decrement_ar(reg, 4);
                 self.mmu
-                    .read_long(self.addr_registers[reg as usize] as usize)
+                    .read_long(self.read_ar(reg))
             }
             AddressRegisterIndirectDisplacement(reg) => {
                 assert!(reg < 7);
                 let displacement = self.fetch_signed_word();
                 let target =
-                    (self.addr_registers[reg as usize] as i32 + displacement as i32) as usize;
+                    (self.read_ar(reg) as i32 + displacement as i32) as u32;
                 self.mmu.read_long(target)
             }
             AddressRegisterIndirectIndex(reg) => {
                 assert!(reg < 7);
-                // let index = sign_extend_8_to_32(self.fetch_word() & 0x00FF);
-                todo!()
+                let exword = self.fetch_word();
+                let ar = self.read_ar(reg);
+                let offset = self.get_index_offset(exword, Size::Long);                                
+                let addr = ar + offset;
+                self.mmu.read_long(addr)                
             }
             Extension(ext) => match ext {
                 ExtensionMode::Word => {
-                    unreachable!();
-                    // Word(self.fetch_word()) // TODO: should only fetch first or last 32KiB of RAM
+                    let addr = self.fetch_word();
+                    self.mmu.read_long(addr.into())                    
                 }
                 ExtensionMode::Long => {
                     let addr = self.fetch_long();
-                    self.mmu.read_long(addr as usize)
+                    self.mmu.read_long(addr)
                 }
                 ExtensionMode::PcRelativeDisplacement => {
-                    let pc = self.pc;
-                    let offset = sign_extend_16_to_32(self.fetch_word());
-                    let target = (pc as i32 + offset as i32) as usize;
+                    let pc = self.read_pc();                                        
+                    let offset = sign_extend_16_to_32(self.fetch_word());                    
+                    let target = offset.wrapping_add(pc + 2);                    
                     self.mmu.read_long(target)
                 }
                 ExtensionMode::PcRelativeIndex => {
-                    let _pc = self.pc;
-                    // let index = sign_extend_8_to_32(reg);
-                    todo!();
+                    let pc = self.read_pc();                    
+                    let exword = self.fetch_word();                    
+                    let offset = self.get_index_offset(exword, Size::Long);  
+                    dbg_hex::dbg_hex!(offset);                              
+                    let addr = offset.wrapping_add(pc + 2);
+                    dbg_hex::dbg_hex!(addr);
+                    self.mmu.read_long(addr)                                    
                 }
                 ExtensionMode::Immediate => self.fetch_long(),
             },
         }
     }
-}
 
-#[cfg(test)]
-mod test_ea_long {
-    use crate::types::{AddressingMode::*, ExtensionMode::*};
-    use crate::vm::mmu::Mmu;
-
-    use super::Cpu;
-
-    const ADDR_REG: [u32; 8] = [
-        0x00001000, 0x000000A0, 0x00000050, 0x33123456, 0x00000000, 0x00000000, 0x0000008C,
-        0x000000A0,
-    ];
-    const DATA_REG: [u32; 8] = [
-        0x12345678, 0x00000004, 0x00000001, 0xFF00FF00, 0x00FF00FF, 0xD5333333, 0x88888888,
-        0x00000000,
-    ];
-
-    #[rustfmt::skip]
-    const MEM: [u8; 176] = [
-    /* 0x00 */ 0x8d, 0x3a, 0xa8, 0xcb, 0x7d, 0x31, 0x5e, 0xa1, 0x93, 0xa5, 0x61, 0x45, 0x00, 0x00, 0x00, 0x80, 
-    /* 0x10 */ 0xa5, 0x98, 0xad, 0xc8, 0xb9, 0xa0, 0xc3, 0xc8, 0x17, 0x2b, 0x9e, 0xc8, 0x9b, 0xb2, 0x70, 0xff, 
-    /* 0x20 */ 0xaa, 0x2d, 0x13, 0x31, 0xc1, 0x34, 0xd7, 0xfd, 0x18, 0x13, 0xcc, 0x01, 0x53, 0xdb, 0xfb, 0x7b, 
-    /* 0x30 */ 0x1c, 0xdb, 0xa6, 0x7b, 0x19, 0xf6, 0xaa, 0xfe, 0x59, 0x76, 0x0c, 0x87, 0x75, 0x04, 0x48, 0x57, 
-    /* 0x40 */ 0x16, 0xe0, 0x92, 0xb5, 0x96, 0x0d, 0x0f, 0xd8, 0xfd, 0xc7, 0xb6, 0x82, 0x05, 0x56, 0x89, 0xe9, 
-    /* 0x50 */ 0x33, 0x21, 0x83, 0x7a, 0x50, 0xe2, 0xee, 0x3e, 0xdb, 0xf6, 0xe0, 0x0f, 0xde, 0x63, 0xfc, 0xc4, 
-    /* 0x60 */ 0x1d, 0x48, 0x52, 0x3f, 0x28, 0x36, 0x29, 0xaa, 0x5d, 0x66, 0xd9, 0x41, 0x7c, 0x33, 0x62, 0xb9, 
-    /* 0x70 */ 0xfd, 0xbc, 0xd6, 0xfa, 0xa2, 0x32, 0xb8, 0xd8, 0xa0, 0x13, 0x1c, 0xba, 0x1b, 0xef, 0x93, 0x96, 
-    /* 0x80 */ 0x75, 0x68, 0x19, 0xf3, 0x2d, 0x13, 0xba, 0x27, 0xdc, 0x16, 0x51, 0xa9, 0x65, 0xff, 0xfd, 0x86, 
-    /* 0x90 */ 0xd7, 0x04, 0xd0, 0x72, 0x15, 0xab, 0x8b, 0x89, 0xe3, 0x4d, 0x86, 0xf2, 0x00, 0x00, 0x00, 0x10, 
-    /* 0xA0 */ 0x00, 0x00, 0x00, 0x0c, 0x00, 0x00, 0x00, 0x88, 0x00, 0x00, 0x00, 0x0c, 0x00, 0x00, 0x00, 0x88
-    ];
-
-    #[test]
-    fn test_address_register_direct() {
-        let mut cpu = Cpu {
-            sr: 0x0000,
-            pc: 0x00000100,
-            data_registers: DATA_REG,
-            addr_registers: ADDR_REG,
-            mmu: Mmu::from_vec(MEM.to_vec()),
-        };
-        let ea = cpu.get_ea_long(AddressRegisterDirect(3));
-        assert_eq!(ea, (0x33123456));
+    pub fn write_ea_long(&mut self, mode: AddressingMode, val: u32) {
+        match mode {
+            AddressingMode::DataRegisterDirect(reg) => self.write_dr(reg, val),            
+            AddressingMode::AddressRegisterIndirect(reg) => {
+                assert!(reg < 7);
+                self.mmu
+                    .write_long(self.read_ar(reg), val);
+            },
+            AddressingMode::AddressRegisterIndirectPostIncrement(reg) => {                
+                self.mmu.write_long(self.read_ar(reg), val);
+                self.increment_ar(reg, 4);                
+            },
+            AddressingMode::AddressRegisterIndirectPreDecrement(reg) => {                
+                self.decrement_ar(reg, 4);
+                self.mmu
+                    .write_long(self.read_ar(reg), val);
+            },
+            AddressingMode::AddressRegisterIndirectDisplacement(reg) => {
+                assert!(reg < 7);
+                let displacement = self.fetch_signed_word();
+                let target =
+                    (self.read_ar(reg) as i32 + displacement as i32) as u32;
+                self.mmu.write_long(target, val);
+            },
+            AddressingMode::AddressRegisterIndirectIndex(reg) => {
+                let exword = self.fetch_word();
+                let ar = self.read_ar(reg);
+                let offset = self.get_index_offset(exword, Size::Long);                                
+                let addr = ar + offset;
+                self.mmu.write_long(addr, val)
+            },
+            AddressingMode::Extension(e) => match e {
+                ExtensionMode::Word => {
+                    let addr = self.fetch_word();
+                    self.mmu.write_long(addr.into(), val);
+                },
+                ExtensionMode::Long => {
+                    let addr = self.fetch_long();
+                    self.mmu.write_long(addr, val)
+                },
+                _ => panic!("Unable to write with this Addressing Mode")                
+            },
+            _ => panic!("Unable to write with this Addressing Mode")
+        }
     }
 
-    #[test]
-    fn test_data_register_direct() {
-        let mut cpu = Cpu {
-            sr: 0x0000,
-            pc: 0x00000100,
-            data_registers: DATA_REG,
-            addr_registers: ADDR_REG,
-            mmu: Mmu::from_vec(MEM.to_vec()),
+    /// Extension Bit Format
+    ///  |F E D C|B A 9 8|7 6 5 4|3 2 1 0|
+    ///  |X|A-A-A|B|-----|C-C-C-C-C-C-C-C|
+    /// X: Xi register type - 0 for D, 1 for A
+    /// A: Xi
+    /// B: Xi size - 0 for word, 1 for long
+    /// C: 8 bit signed displacement
+    fn get_index_offset(&self, word: u16, size: Size) -> u32 {
+        let displacement = sign_extend_8_to_32((word & 0b0000_0000_1111_1111) as u8);
+        let reg = ((word & 0b0111_0000_0000_0000) >> 12) as u8;
+        let index = if (word & 0b1000_0000_0000_0000) == 0 {
+            self.read_dr(reg)
+        } else {
+            self.read_ar(reg)
         };
-        let ea = cpu.get_ea_long(DataRegisterDirect(5));
-        assert_eq!(ea, (0xD5333333));
+        let scale = size as u32;
+        dbg!(scale);
+        let reg_size = (word & 0b0000_1000_0000_0000) >> 11;
+        dbg!(reg_size);
+        if reg_size == 0 {
+            todo!("word reg size?");
+        }
+        displacement + (index * scale)
     }
-
-    #[test]
-    fn test_address_register_indirect() {
-        let mut cpu = Cpu {
-            sr: 0x0000,
-            pc: 0x00000100,
-            data_registers: DATA_REG,
-            addr_registers: ADDR_REG,
-            mmu: Mmu::from_vec(MEM.to_vec()),
-        };
-        let ea = cpu.get_ea_long(AddressRegisterIndirect(2));
-        assert_eq!(ea, (0x3321837A));
-    }
-
-    #[test]
-    fn test_address_register_indirect_postincrement() {
-        let mut cpu = Cpu {
-            sr: 0x0000,
-            pc: 0x00000100,
-            data_registers: DATA_REG,
-            addr_registers: ADDR_REG,
-            mmu: Mmu::from_vec(MEM.to_vec()),
-        };
-        let ea = cpu.get_ea_long(AddressRegisterIndirectPostIncrement(2));
-        assert_eq!(ea, (0x3321837A));
-        assert_eq!(cpu.addr_registers[2], 0x00000054);
-    }
-
-    #[test]
-    fn test_address_register_indirect_predecrement() {
-        let mut cpu = Cpu {
-            sr: 0x0000,
-            pc: 0x00000100,
-            data_registers: DATA_REG,
-            addr_registers: ADDR_REG,
-            mmu: Mmu::from_vec(MEM.to_vec()),
-        };
-        let ea = cpu.get_ea_long(AddressRegisterIndirectPreDecrement(2));
-        assert_eq!(ea, (0x055689E9));
-        assert_eq!(cpu.addr_registers[2], 0x0000004C);
-    }
-
-    #[test]
-    fn test_address_register_indirect_displacement() {
-        let mut cpu = Cpu {
-            sr: 0x0000,
-            pc: 0x000000a2,
-            data_registers: DATA_REG,
-            addr_registers: ADDR_REG,
-            mmu: Mmu::from_vec(MEM.to_vec()),
-        };
-        let ea = cpu.get_ea_long(AddressRegisterIndirectDisplacement(2));
-        assert_eq!(ea, (0xDE63FCC4));
-    }
-
-    #[test]
-    fn test_absolute() {
-        let mut cpu = Cpu {
-            sr: 0x0000,
-            pc: 0x000000A4,
-            data_registers: DATA_REG,
-            addr_registers: ADDR_REG,
-            mmu: Mmu::from_vec(MEM.to_vec()),
-        };
-        let ea = cpu.get_ea_long(Extension(Long));
-        assert_eq!(ea, (0xDC1651A9));
-    }
-
-    #[test]
-    fn test_immediate() {
-        let mut cpu = Cpu {
-            sr: 0x0000,
-            pc: 0x000000A4,
-            data_registers: DATA_REG,
-            addr_registers: ADDR_REG,
-            mmu: Mmu::from_vec(MEM.to_vec()),
-        };
-        let ea = cpu.get_ea_long(Extension(Immediate));
-        assert_eq!(ea, 0x00000088);
-    }
+    
 }

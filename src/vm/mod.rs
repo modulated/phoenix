@@ -10,12 +10,8 @@ pub struct VM<'a> {
 }
 
 impl<'a> VM<'a> {
-    pub fn new() -> Self {
-        let mut out = Self {
-            ..Default::default()
-        };
-        out.cpu.pc = 0x0400;
-        out
+    pub fn new() -> Self {        
+        Default::default()        
     }
 
     pub fn load(&mut self, rom: &[u8]) {
@@ -24,5 +20,9 @@ impl<'a> VM<'a> {
 
     pub fn run(&mut self) {
         self.cpu.run();
+    }
+
+    pub fn set_pc(&mut self, pc: u32) {
+        self.cpu.write_pc(pc);
     }
 }

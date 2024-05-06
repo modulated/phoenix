@@ -19,31 +19,31 @@ impl<'a> Mmu<'a> {
         }
     }
 
-    pub fn read_word(&self, addr: usize) -> u16 {
+    pub fn read_word(&self, addr: u32) -> u16 {
         assert!(addr % 2 == 0, "Memory access not word aligned!");
-        ((self.ram[addr] as u16) << 8) + self.ram[addr + 1] as u16
+        ((self.ram[addr as usize] as u16) << 8) + self.ram[addr as usize + 1] as u16
     }
 
-    pub fn write_word(&mut self, addr: usize, value: u16) {
+    pub fn write_word(&mut self, addr: u32, val: u16) {
         assert!(addr % 2 == 0, "Memory access not word aligned!");
-        self.ram[addr] = ((0xFF00 & value) >> 8) as u8;
-        self.ram[addr + 1] = (0xFF & value) as u8;
+        self.ram[addr as usize] = ((0xFF00 & val) >> 8) as u8;
+        self.ram[addr as usize + 1] = (0xFF & val) as u8;
     }
 
-    pub fn read_long(&self, addr: usize) -> u32 {
+    pub fn read_long(&self, addr: u32) -> u32 {
         assert!(addr % 2 == 0, "Memory access not word aligned!");
-        ((self.ram[addr] as u32) << 24)
-            + ((self.ram[addr + 1] as u32) << 16)
-            + ((self.ram[addr + 2] as u32) << 8)
-            + self.ram[addr + 3] as u32
+        ((self.ram[addr as usize] as u32) << 24)
+            + ((self.ram[addr as usize + 1] as u32) << 16)
+            + ((self.ram[addr as usize + 2] as u32) << 8)
+            + self.ram[addr as usize + 3] as u32
     }
 
-    pub fn write_long(&mut self, addr: usize, value: u32) {
+    pub fn write_long(&mut self, addr: u32, val: u32) {
         assert!(addr % 2 == 0, "Memory access not word aligned!");
-        self.ram[addr] = ((0xFF000000 & value) >> 24) as u8;
-        self.ram[addr + 1] = ((0x00FF0000 & value) >> 16) as u8;
-        self.ram[addr + 2] = ((0x0000FF00 & value) >> 8) as u8;
-        self.ram[addr + 3] = (0xFF & value) as u8;
+        self.ram[addr as usize] = ((0xFF000000 & val) >> 24) as u8;
+        self.ram[addr as usize + 1] = ((0x00FF0000 & val) >> 16) as u8;
+        self.ram[addr as usize + 2] = ((0x0000FF00 & val) >> 8) as u8;
+        self.ram[addr as usize + 3] = (0xFF & val) as u8;
     }
 }
 

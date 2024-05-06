@@ -1,10 +1,11 @@
 use std::fmt::Display;
 
 #[allow(dead_code)]
+#[derive(Debug, Copy, Clone)]
 pub enum Size {
-    Byte,
-    Word,
-    Long,
+    Byte = 1,
+    Word = 2,
+    Long = 4,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -21,6 +22,15 @@ impl Display for Value {
             Value::Word(x) => write!(f, "{x:#06x}"),
             Value::Long(x) => write!(f, "{x:#08x}"),
         }
+    }
+}
+
+#[allow(dead_code)]
+pub fn sign_extend_8_to_16(byte: u8) -> u16 {
+    if byte & 0b1000_0000 == 0 {
+        byte as u16
+    } else {
+        0xFF00 + (byte as u16)
     }
 }
 
@@ -45,6 +55,7 @@ pub fn sign_transmute(word: u16) -> i16 {
     word as i16
 }
 
+#[derive(Debug, Copy, Clone)]
 pub enum AddressingMode {
     DataRegisterDirect(u8),                   // Dn
     AddressRegisterDirect(u8),                // An
@@ -81,6 +92,7 @@ impl AddressingMode {
     }
 }
 
+#[derive(Debug, Copy, Clone)]
 pub enum ExtensionMode {
     Word = 0b000,                   // <addr>.w
     Long = 0b001,                   // <addr>.l
