@@ -1,24 +1,30 @@
 use super::mmu::Mmu;
-use crate::types::sign_transmute;
+use crate::util::sign_transmute;
 
 #[derive(Default, Debug)]
-pub(super) struct Cpu<'a> {
+pub struct Cpu<'a> {
     sr: u16,
     pc: usize,
-    data_registers: [u32; 8],
-    addr_registers: [u32; 7],
+    pub(crate) data_registers: [u32; 8],
+    pub(crate) addr_registers: [u32; 7],
     usp: u32,
     ssp: u32,
     pub mmu: Mmu<'a>,
 }
 
 impl<'a> Cpu<'a> {
+    pub const STACK: u8 = 7;
     pub fn run(&mut self) {
         loop {
-            print!("PC: {:#010x} ", self.pc);
+            print!("PC: {:#010X} ", self.pc);
             let inst = self.fetch_word();
-            self.exec(inst)
+            self.exec(inst);
         }
+    }
+
+    pub fn step(&mut self) {
+        let inst = self.fetch_word();
+        self.exec(inst);
     }
 
     pub fn load(&mut self, buffer: &[u8]) {
@@ -106,7 +112,6 @@ impl<'a> Cpu<'a> {
         self.data_registers[usize::from(reg)] = val;
     }
 
-    #[allow(dead_code)]
     pub fn read_pc(&self) -> u32 {
         self.pc.try_into().unwrap()
     }
@@ -125,6 +130,14 @@ impl<'a> Cpu<'a> {
         } else {
             self.sr &= !(sr as u16);
         }
+    }
+
+    pub fn read_ssp(&self) -> u32 {
+        self.ssp
+    }
+
+    pub fn read_usp(&self) -> u32 {
+        self.usp
     }
 }
 
@@ -203,7 +216,7 @@ mod test_ea_long {
             ssp: 0,
             mmu: Mmu::from_vec(MEM.to_vec()),
         };
-        let ea = cpu.get_ea_long(AddressRegisterDirect(3));
+        let ea = cpu.read_ea_long(AddressRegisterDirect(3));
         assert_eq!(ea, (0x33123456));
     }
 
@@ -218,7 +231,7 @@ mod test_ea_long {
             ssp: 0,
             mmu: Mmu::from_vec(MEM.to_vec()),
         };
-        let ea = cpu.get_ea_long(DataRegisterDirect(5));
+        let ea = cpu.read_ea_long(DataRegisterDirect(5));
         assert_eq!(ea, (0xD5333333));
     }
 
@@ -233,7 +246,7 @@ mod test_ea_long {
             ssp: 0,
             mmu: Mmu::from_vec(MEM.to_vec()),
         };
-        let ea = cpu.get_ea_long(AddressRegisterIndirect(2));
+        let ea = cpu.read_ea_long(AddressRegisterIndirect(2));
         assert_eq!(ea, 0x3321837A);
     }
 
@@ -248,7 +261,7 @@ mod test_ea_long {
             ssp: 0,
             mmu: Mmu::from_vec(MEM.to_vec()),
         };
-        let ea = cpu.get_ea_long(AddressRegisterIndirectPostIncrement(2));
+        let ea = cpu.read_ea_long(AddressRegisterIndirectPostIncrement(2));
         assert_eq!(ea, 0x3321837A);
         assert_eq!(cpu.addr_registers[2], 0x00000054);
     }
@@ -264,7 +277,7 @@ mod test_ea_long {
             ssp: 0,
             mmu: Mmu::from_vec(MEM.to_vec()),
         };
-        let ea = cpu.get_ea_long(AddressRegisterIndirectPreDecrement(2));
+        let ea = cpu.read_ea_long(AddressRegisterIndirectPreDecrement(2));
         assert_eq!(ea, 0x055689E9);
         assert_eq!(cpu.addr_registers[2], 0x0000004C);
     }
@@ -280,7 +293,7 @@ mod test_ea_long {
             ssp: 0,
             mmu: Mmu::from_vec(MEM.to_vec()),
         };
-        let ea = cpu.get_ea_long(AddressRegisterIndirectDisplacement(2));
+        let ea = cpu.read_ea_long(AddressRegisterIndirectDisplacement(2));
         assert_eq!(ea, 0xDE63FCC4);
     }
 
@@ -295,7 +308,7 @@ mod test_ea_long {
             ssp: 0,
             mmu: Mmu::from_vec(MEM.to_vec()),
         };
-        let ea = cpu.get_ea_long(AddressRegisterIndirectIndex(2));
+        let ea = cpu.read_ea_long(AddressRegisterIndirectIndex(2));
         assert_eq!(ea, 0xFDBCD6FA);
     }
 
@@ -310,7 +323,7 @@ mod test_ea_long {
             ssp: 0,
             mmu: Mmu::from_vec(MEM.to_vec()),
         };
-        let ea = cpu.get_ea_long(Extension(PcRelativeDisplacement));
+        let ea = cpu.read_ea_long(Extension(PcRelativeDisplacement));
         assert_eq!(ea, 0xD07215AB);
     }
 
@@ -325,7 +338,7 @@ mod test_ea_long {
             ssp: 0,
             mmu: Mmu::from_vec(MEM.to_vec()),
         };
-        let ea = cpu.get_ea_long(Extension(PcRelativeIndex));
+        let ea = cpu.read_ea_long(Extension(PcRelativeIndex));
         assert_eq!(ea, 0xD07215AB);
     }
 
@@ -340,7 +353,7 @@ mod test_ea_long {
             ssp: 0,
             mmu: Mmu::from_vec(MEM.to_vec()),
         };
-        let ea = cpu.get_ea_word(Extension(Word));
+        let ea = cpu.read_ea_word(Extension(Word));
         assert_eq!(ea, 0xDC16);
     }
 
@@ -355,7 +368,7 @@ mod test_ea_long {
             ssp: 0,
             mmu: Mmu::from_vec(MEM.to_vec()),
         };
-        let ea = cpu.get_ea_long(Extension(Long));
+        let ea = cpu.read_ea_long(Extension(Long));
         assert_eq!(ea, 0xDC1651A9);
     }
 
@@ -370,7 +383,7 @@ mod test_ea_long {
             ssp: 0,
             mmu: Mmu::from_vec(MEM.to_vec()),
         };
-        let ea = cpu.get_ea_long(Extension(Immediate));
+        let ea = cpu.read_ea_long(Extension(Immediate));
         assert_eq!(ea, 0x00000088);
     }
 }

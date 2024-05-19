@@ -1,4 +1,7 @@
-use std::fmt::Display;
+use std::{
+    fmt::{Display, UpperHex},
+    ops::Sub,
+};
 
 #[allow(dead_code)]
 #[derive(Debug, Copy, Clone)]
@@ -15,44 +18,36 @@ pub enum Value {
     Long(u32),
 }
 
-impl Display for Value {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl Sub<u8> for Value {
+    type Output = Value;
+
+    fn sub(self, rhs: u8) -> Self::Output {
         match self {
-            Value::Byte(x) => write!(f, "{x:#04x}"),
-            Value::Word(x) => write!(f, "{x:#06x}"),
-            Value::Long(x) => write!(f, "{x:#08x}"),
+            Value::Byte(v) => Value::Byte(v - rhs),
+            Value::Word(v) => Value::Word(v - rhs as u16),
+            Value::Long(v) => Value::Long(v - rhs as u32),
         }
     }
 }
 
-#[allow(dead_code)]
-pub fn sign_extend_8_to_16(byte: u8) -> u16 {
-    if byte & 0b1000_0000 == 0 {
-        byte as u16
-    } else {
-        0xFF00 + (byte as u16)
+impl UpperHex for Value {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Value::Byte(v) => write!(f, "{v:#04X}"),
+            Value::Word(v) => write!(f, "{v:#06X}"),
+            Value::Long(v) => write!(f, "{v:#010X}"),
+        }
     }
 }
 
-#[allow(dead_code)]
-pub fn sign_extend_8_to_32(byte: u8) -> u32 {
-    if byte & 0b1000_0000 == 0 {
-        byte as u32
-    } else {
-        0xFFFFFF00 + (byte as u32)
+impl Display for Value {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Value::Byte(x) => write!(f, "{x:#04X}"),
+            Value::Word(x) => write!(f, "{x:#06X}"),
+            Value::Long(x) => write!(f, "{x:#010X}"),
+        }
     }
-}
-
-pub fn sign_extend_16_to_32(word: u16) -> u32 {
-    if word & 0b1000_0000_0000_0000 == 0 {
-        word as u32
-    } else {
-        0xFFFF0000 + (word as u32)
-    }
-}
-
-pub fn sign_transmute(word: u16) -> i16 {
-    word as i16
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -99,24 +94,4 @@ pub enum ExtensionMode {
     PcRelativeDisplacement = 0b010, // d16(PC)
     PcRelativeIndex = 0b011,        // (d8, PC, Xn)
     Immediate = 0b100,              // #<data>
-}
-
-#[cfg(test)]
-mod test {
-    use super::{sign_extend_16_to_32, sign_transmute};
-
-    #[test]
-    fn test_sign_extend_word() {
-        assert_eq!(sign_extend_16_to_32(0x9012), 0xFFFF9012);
-        assert_eq!(sign_extend_16_to_32(0x1012), 0x00001012);
-        assert_eq!(sign_extend_16_to_32(0xF231), 0xFFFFF231);
-    }
-
-    #[test]
-    fn test_sign_transmute() {
-        assert_eq!(sign_transmute(0xFFFF), -1);
-        assert_eq!(sign_transmute(0), 0);
-        assert_eq!(sign_transmute(10), 10);
-        assert_eq!(sign_transmute(0xFFF6), -10);
-    }
 }

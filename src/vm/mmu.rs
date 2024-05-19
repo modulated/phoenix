@@ -19,6 +19,14 @@ impl<'a> Mmu<'a> {
         }
     }
 
+    pub fn read_byte(&self, addr: u32) -> u8 {
+        self.ram[addr as usize]
+    }
+
+    pub fn write_byte(&mut self, addr: u32, val: u8) {
+        self.ram[addr as usize] = val;
+    }
+
     pub fn read_word(&self, addr: u32) -> u16 {
         assert!(addr % 2 == 0, "Memory access not word aligned!");
         ((self.ram[addr as usize] as u16) << 8) + self.ram[addr as usize + 1] as u16
@@ -44,6 +52,10 @@ impl<'a> Mmu<'a> {
         self.ram[addr as usize + 1] = ((0x00FF0000 & val) >> 16) as u8;
         self.ram[addr as usize + 2] = ((0x0000FF00 & val) >> 8) as u8;
         self.ram[addr as usize + 3] = (0xFF & val) as u8;
+    }
+
+    pub fn get_slice(&self) -> &[u8] {
+        self.ram
     }
 }
 
