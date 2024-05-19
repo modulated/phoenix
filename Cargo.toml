@@ -3,11 +3,16 @@ name = "phoenix"
 version = "0.1.0"
 edition = "2021"
 
+[workspace]
+members = [
+    "tui"
+]
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
 
 [dependencies]
 simplelog = "0"
-bitvec = "1"
 clap = {version = "4", features = ["derive"]}
 log = "0"
 serde = {version = "1", features = ["derive"]}
