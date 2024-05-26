@@ -1,4 +1,5 @@
-use crate::{util::get_bits, vm::cpu::Cpu};
+use crate::{types::ConditionCode, util::get_bits, vm::cpu::Cpu};
+use log::trace;
 
 impl<'a> Cpu<'a> {
     pub(super) fn branch_family(&mut self, inst: u16) {
@@ -9,17 +10,43 @@ impl<'a> Cpu<'a> {
         }
     }
 
-    fn bra(&mut self, _inst: u16) {
-        todo!()
+    fn bra(&mut self, inst: u16) {
+        let val = get_bits(inst, 0, 8);
+        let pc = self.read_pc();
+        let disp = if val == 0 {
+            self.fetch_signed_word() as i64
+        } else {
+            val as i64
+        };
+        trace!("{:#08X} BRA {disp:#06X}", self.read_pc());
+        self.write_pc((pc as i64 + disp) as u32);
     }
 
-    fn bsr(&mut self, _inst: u16) {
-        println!("BSR ");
-        todo!()
+    fn bsr(&mut self, inst: u16) {
+        let val = get_bits(inst, 0, 8);
+        let pc = self.read_pc();
+        let disp = if val == 0 {
+            self.fetch_signed_word() as i64
+        } else {
+            val as i64
+        };
+        trace!("{:#08X} BSR {disp:#06X}", self.read_pc());
+        self.push_long(pc);
+        self.write_pc((pc as i64 + disp) as u32);
     }
 
-    fn bcc(&mut self, _inst: u16) {
-        println!("BCC ");
-        todo!()
+    fn bcc(&mut self, inst: u16) {
+        let cc = ConditionCode::from(get_bits(inst, 8, 4) as u8);
+        let pc = self.read_pc() - 2;
+        let disp = inst as u8;
+        let disp = if disp == 0 {
+            self.fetch_signed_word()
+        } else {
+            disp as i16
+        };
+        trace!("{:#08X} BCC {:?} {}", self.read_pc(), cc, disp);
+        if self.test_cc(cc) {
+            self.write_pc((pc as i64 + disp as i64) as u32);
+        }
     }
 }

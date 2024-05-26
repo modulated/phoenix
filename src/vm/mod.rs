@@ -17,7 +17,7 @@ pub struct VM<'a> {
 impl<'a> VM<'a> {
     pub fn new() -> Self {
         Self {
-            inst_time: 1,
+            inst_time: 1,            
             ..Default::default()
         }
     }
@@ -41,12 +41,16 @@ impl<'a> VM<'a> {
         self.cpu.write_pc(pc);
     }
 
+    pub fn set_sp(&mut self, sp: u32) {
+        self.cpu.write_ar(Cpu::STACK, sp);
+    }
+
     pub fn read_pc(&self) -> u32 {
         self.cpu.read_pc()
     }
 
-    pub fn read_sr(&self, sr: StatusRegister) -> bool {
-        self.cpu.read_sr(sr)
+    pub fn read_ccr(&self, sr: StatusRegister) -> bool {
+        self.cpu.read_ccr(sr)
     }
 
     pub fn read_ssp(&self) -> u32 {

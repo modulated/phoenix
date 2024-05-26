@@ -1,7 +1,7 @@
 use super::mmu::Mmu;
-use crate::util::sign_transmute;
+use crate::{types::ConditionCode, util::sign_transmute, vm::StatusRegister as SR};
 
-#[derive(Default, Debug)]
+#[derive(Debug)]
 pub struct Cpu<'a> {
     sr: u16,
     pc: usize,
@@ -12,11 +12,24 @@ pub struct Cpu<'a> {
     pub mmu: Mmu<'a>,
 }
 
+impl<'a> Default for Cpu<'a> {
+    fn default() -> Self {
+        Self { 
+            sr: 0x2000,
+            pc: Default::default(),
+            data_registers: Default::default(),
+            addr_registers: Default::default(),
+            usp: 0x00FFFFFE,
+            ssp: 0x01000000,
+            mmu: Default::default() 
+        }
+    }
+}
+
 impl<'a> Cpu<'a> {
     pub const STACK: u8 = 7;
     pub fn run(&mut self) {
         loop {
-            print!("PC: {:#010X} ", self.pc);
             let inst = self.fetch_word();
             self.exec(inst);
         }
@@ -36,6 +49,10 @@ impl<'a> Cpu<'a> {
         self.mmu.read_word(self.pc as u32 - 2)
     }
 
+    pub fn peep_word(&self) -> u16 {        
+        self.mmu.read_word(self.pc as u32)
+    }
+
     pub fn fetch_signed_word(&mut self) -> i16 {
         self.pc += 2;
         sign_transmute(self.mmu.read_word(self.pc as u32 - 2))
@@ -44,6 +61,22 @@ impl<'a> Cpu<'a> {
     pub fn fetch_long(&mut self) -> u32 {
         self.pc += 4;
         self.mmu.read_long(self.pc as u32 - 4)
+    }
+
+    pub fn peep_long(&self) -> u32 {        
+        self.mmu.read_long(self.pc as u32)
+    }
+
+    pub fn push_long(&mut self, val: u32) {
+        let new = self.read_ar(Cpu::STACK) - 4;
+        self.write_ar(Cpu::STACK, new);
+        self.mmu.write_long(new, val);
+    }
+
+    pub fn pop_long(&mut self) -> u32 {
+        let pc = self.read_ar(Cpu::STACK);
+        self.write_ar(Cpu::STACK, pc + 4);
+        self.mmu.read_long(pc)
     }
 
     fn is_supervisor_mode(&self) -> bool {
@@ -120,11 +153,23 @@ impl<'a> Cpu<'a> {
         self.pc = pc.try_into().unwrap();
     }
 
-    pub fn read_sr(&self, sr: StatusRegister) -> bool {
-        (self.sr & sr as u16) == sr as u16
+    pub fn write_sp(&mut self, val: u32) {
+        self.write_ar(Cpu::STACK, val);
     }
 
-    pub fn write_sr(&mut self, sr: StatusRegister, val: bool) {
+    pub fn read_sp(&self) -> u32 {
+        self.read_ar(Cpu::STACK)
+    }
+    
+    pub fn read_sr(&self) -> u16 {
+        self.sr
+    }
+
+    pub fn read_ccr(&self, sr: StatusRegister) -> bool {
+        (self.sr & sr as u16) != 0
+    }
+
+    pub fn write_ccr(&mut self, sr: StatusRegister, val: bool) {
         if val {
             self.sr |= sr as u16;
         } else {
@@ -138,6 +183,40 @@ impl<'a> Cpu<'a> {
 
     pub fn read_usp(&self) -> u32 {
         self.usp
+    }
+
+    pub fn test_cc(&self, cc: ConditionCode) -> bool {
+        match cc {
+            ConditionCode::True => true,
+            ConditionCode::False => false,
+            ConditionCode::Higher => !self.read_ccr(SR::C) & !self.read_ccr(SR::Z),
+            ConditionCode::LowerOrSame => self.read_ccr(SR::C) | self.read_ccr(SR::Z),
+            ConditionCode::CarryClear => !self.read_ccr(SR::C),
+            ConditionCode::CarrySet => self.read_ccr(SR::C),
+            ConditionCode::NotEqual => !self.read_ccr(SR::Z),
+            ConditionCode::Equal => self.read_ccr(SR::Z),
+            ConditionCode::OverflowClear => !self.read_ccr(SR::V),
+            ConditionCode::OverflowSet => self.read_ccr(SR::V),
+            ConditionCode::Plus => !self.read_ccr(SR::N),
+            ConditionCode::Minus => self.read_ccr(SR::N),
+            ConditionCode::GreaterOrEqual => {
+                self.read_ccr(SR::N) & self.read_ccr(SR::V)
+                    | !self.read_ccr(SR::N) & !self.read_ccr(SR::V)
+            }
+            ConditionCode::LessThan => {
+                self.read_ccr(SR::N) & !self.read_ccr(SR::V)
+                    | !self.read_ccr(SR::N) & self.read_ccr(SR::V)
+            }
+            ConditionCode::GreatherThan => {
+                self.read_ccr(SR::N) & self.read_ccr(SR::V) & !self.read_ccr(SR::Z)
+                    | !self.read_ccr(SR::N) & !self.read_ccr(SR::V) & !self.read_ccr(SR::Z)
+            }
+            ConditionCode::LessOrEqual => {
+                self.read_ccr(SR::Z)
+                    | self.read_ccr(SR::N) & !self.read_ccr(SR::V)
+                    | !self.read_ccr(SR::N) & self.read_ccr(SR::V)
+            }
+        }
     }
 }
 
@@ -157,21 +236,36 @@ mod test_sr_bitlogic {
     #[test]
     fn test_x() {
         let mut cpu = Cpu::default();
-        assert!(!cpu.read_sr(SR::X));
-        cpu.write_sr(SR::X, true);
-        assert!(cpu.read_sr(SR::X));
-        cpu.write_sr(SR::X, false);
-        assert!(!cpu.read_sr(SR::X));
+        assert!(!cpu.read_ccr(SR::X));
+        cpu.write_ccr(SR::X, true);
+        assert!(cpu.read_ccr(SR::X));
+        cpu.write_ccr(SR::X, false);
+        assert!(!cpu.read_ccr(SR::X));
     }
 
     #[test]
     fn test_c() {
         let mut cpu = Cpu::default();
-        assert!(!cpu.read_sr(SR::C));
-        cpu.write_sr(SR::C, true);
-        assert!(cpu.read_sr(SR::C));
-        cpu.write_sr(SR::C, false);
-        assert!(!cpu.read_sr(SR::C));
+        assert!(!cpu.read_ccr(SR::C));
+        cpu.write_ccr(SR::C, true);
+        assert!(cpu.read_ccr(SR::C));
+        cpu.write_ccr(SR::C, false);
+        assert!(!cpu.read_ccr(SR::C));
+    }
+}
+
+#[cfg(test)]
+mod test_stack {
+    use super::Cpu;
+
+    #[test]
+    fn test_long_stack() {
+        let mut cpu = Cpu::default();
+        cpu.write_ar(Cpu::STACK, 0xFFF0);
+        cpu.push_long(0xFAFABABA);
+        cpu.push_long(0xABBA1050);
+        assert_eq!(cpu.pop_long(), 0xABBA1050);
+        assert_eq!(cpu.pop_long(), 0xFAFABABA);
     }
 }
 

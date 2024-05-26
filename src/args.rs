@@ -6,4 +6,6 @@ pub struct Args {
     pub log_level: log::LevelFilter,
     #[arg(long = "pc", short, default_value = "0400")]
     pub program_counter: String,
+    #[arg(long = "sp", short, default_value = "FFFFFE")]
+    pub stack_pointer: String,
 }

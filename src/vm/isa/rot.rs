@@ -1,3 +1,5 @@
+use log::trace;
+
 use crate::{
     types::{AddressingMode, Size, Value},
     util::{get_reg, get_size, is_bit_set, SizeCoding},
@@ -28,7 +30,7 @@ impl<'a> Cpu<'a> {
 
     fn asd_reg(&mut self, inst: u16) {
         let ea = AddressingMode::from(inst);
-        println!("ASD {ea:?}");
+        trace!("ASD {ea:?}");
         todo!()
     }
 
@@ -51,7 +53,7 @@ impl<'a> Cpu<'a> {
         } else {
             count
         };
-        println!("LSR {count} Ar{a_reg} {size:?}");
+        trace!("LSR {count} Ar{a_reg} {size:?}");
         let res = self.read_ar(a_reg) >> shift_count; // TODO: 24 bit mask?
         self.write_ar(a_reg, res);
         // TODO flags
@@ -70,25 +72,25 @@ impl<'a> Cpu<'a> {
         };
         let val = self.read_ar(a_reg);
         let res = val << shift_count; // TODO: 24 bit mask?
-        println!("LSL {shift_count} Ar{a_reg}: {val:#X} {size:?}");
+        trace!("LSL {shift_count} Ar{a_reg}: {val:#X} {size:?}");
         self.write_ar(a_reg, res);
         // TODO flags
     }
 
     fn roxd_reg(&mut self, inst: u16) {
         let ea = AddressingMode::from(inst);
-        println!("ROXD {ea:?}");
+        trace!("ROXD {ea:?}");
     }
 
     fn rod_reg(&mut self, inst: u16) {
         let ea = AddressingMode::from(inst);
-        println!("ROD {ea:?}");
+        trace!("ROD {ea:?}");
         todo!()
     }
 
     fn asd_mem(&mut self, inst: u16) {
         let ea = AddressingMode::from(inst);
-        println!("ASD {ea:?}");
+        trace!("ASD {ea:?}");
         todo!()
     }
 
@@ -109,7 +111,7 @@ impl<'a> Cpu<'a> {
         };
         let ea = AddressingMode::from(inst);
         let val = self.read_ea(ea, size);
-        println!("LSR {ea:?}: {val}");
+        trace!("LSR {ea:?}: {val}");
         let _rot = match val {
             Value::Byte(v) => v % 64,
             Value::Word(v) => (v % 64) as u8,
@@ -127,7 +129,7 @@ impl<'a> Cpu<'a> {
         };
         let ea = AddressingMode::from(inst);
         let val = self.read_ea(ea, size);
-        println!("LSL {ea:?}: {val}");
+        trace!("LSL {ea:?}: {val}");
         let _rot = match val {
             Value::Byte(v) => v % 64,
             Value::Word(v) => (v % 64) as u8,
@@ -147,35 +149,35 @@ impl<'a> Cpu<'a> {
     fn roxl_mem(&mut self, inst: u16) {
         let ea = AddressingMode::from(inst);
         let val = self.read_ea_word(ea);
-        println!("ROXL {ea:?}: {val:#X}");
+        trace!("ROXL {ea:?}: {val:#X}");
         todo!()
     }
 
     fn roxr_mem(&mut self, inst: u16) {
         let ea = AddressingMode::from(inst);
         let val = self.read_ea_word(ea);
-        println!("ROXR {ea:?}: {val:#X}");
+        trace!("ROXR {ea:?}: {val:#X}");
         let out_bit = (0b1 & val) == 0b1;
         let mut val = val >> 1;
-        if self.read_sr(SR::X) {
+        if self.read_ccr(SR::X) {
             val |= 0b1000_0000_0000_0000;
         }
         self.write_ea_word(ea, val);
 
         // SR
-        self.write_sr(SR::C, out_bit);
-        self.write_sr(SR::V, false);
-        self.write_sr(SR::Z, val == 0);
-        self.write_sr(
+        self.write_ccr(SR::C, out_bit);
+        self.write_ccr(SR::V, false);
+        self.write_ccr(SR::Z, val == 0);
+        self.write_ccr(
             SR::N,
             (val & 0b1000_0000_0000_0000) == 0b1000_0000_0000_0000,
         );
-        self.write_sr(SR::X, out_bit);
+        self.write_ccr(SR::X, out_bit);
     }
 
     fn rod_mem(&mut self, inst: u16) {
         let ea = AddressingMode::from(inst);
-        println!("ROD {ea:?}");
+        trace!("ROD {ea:?}");
         todo!()
     }
 }

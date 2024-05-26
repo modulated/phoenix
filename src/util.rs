@@ -9,7 +9,6 @@ pub fn sign_extend_8_to_16(byte: u8) -> u16 {
     }
 }
 
-#[allow(dead_code)]
 pub fn sign_extend_8_to_32(byte: u8) -> u32 {
     if byte & 0b1000_0000 == 0 {
         byte as u32
@@ -30,8 +29,32 @@ pub fn sign_transmute(word: u16) -> i16 {
     word as i16
 }
 
-pub(crate) fn is_bit_set(val: u16, pos: u8) -> bool {
-    val & (1 << pos) == (1 << pos)
+pub(crate) fn is_bit_set<T: Into<u32>>(val: T, pos: u8) -> bool {
+    val.into() & (1 << pos) as u32 == (1 << pos) as u32
+}
+
+pub(crate) fn is_negative<T: Into<u32>>(val: T, size: Size) -> bool {
+    match size {
+        Size::Byte => val.into() & (1 << 7) == (1 << 7),
+        Size::Word => val.into() & (1 << 15) == (1 << 15),
+        Size::Long => val.into() & (1 << 31) == (1 << 31),
+    }
+}
+
+pub(crate) fn is_carry(val1: u32, val2: u32, res: u32, size: Size) -> bool {
+    match size {
+        Size::Byte => val1 as u8 > res as u8 || val2 as u8 > res as u8,
+        Size::Word => val1 as u16 > res as u16 || val2 as u16 > res as u16,
+        Size::Long => val1 > res || val2 > res,
+    }
+}
+
+pub(crate) fn is_overflow(val1: u32, val2: u32, res: u32, size: Size) -> bool {
+    match size {
+        Size::Byte => (val1 & 0x80) == (val2 & 0x80) && (val1 & 0x80 != res & 0x80),
+        Size::Word => (val1 & 0x8000) == (val2 & 0x8000) && (val1 & 0x8000 != res & 0x8000),
+        Size::Long => (val1 & 0x80000000) == (val2 & 0x80000000) && (val1 & 0x80000000 != res & 0x80000000),
+    }
 }
 
 pub(crate) fn get_bits(inst: u16, idx: u8, len: u8) -> u16 {
@@ -69,12 +92,14 @@ pub enum SizeCoding {
 
 #[cfg(test)]
 mod test {
+    use crate::{types::Size, util::{is_negative, is_overflow}};
+
     use super::{get_bits, is_bit_set, sign_extend_16_to_32, sign_transmute};
     #[test]
     fn test_is_bit_set() {
-        assert!(!is_bit_set(0b0010_0000_1011_0101, 15));
-        assert!(is_bit_set(0b0010_0000_1011_0101, 0));
-        assert!(is_bit_set(0b0010_0000_1011_0101, 7));
+        assert!(!is_bit_set(0b0010_0000_1011_0101u16, 15));
+        assert!(is_bit_set(0b0010_0000_1011_0101u16, 0));
+        assert!(is_bit_set(0b0010_0000_1011_0101u16, 7));
     }
 
     #[test]
@@ -97,5 +122,34 @@ mod test {
         assert_eq!(sign_transmute(0), 0);
         assert_eq!(sign_transmute(10), 10);
         assert_eq!(sign_transmute(0xFFF6), -10);
+    }
+
+    #[test]
+    fn test_is_neg() {
+        assert!(is_negative(0b1000_1011u8, crate::types::Size::Byte));
+        assert!(!is_negative(0b0100_1011u8, crate::types::Size::Byte));
+        assert!(is_negative(
+            0b1010_1010_0100_1011u16,
+            crate::types::Size::Word
+        ));
+        assert!(!is_negative(
+            0b0101_0101_1000_1011u16,
+            crate::types::Size::Word
+        ));
+        assert!(is_negative(
+            0b1000_1011_1000_1011_1000_1011_1000_1011u32,
+            crate::types::Size::Long
+        ));
+        assert!(!is_negative(
+            0b0100_1011_1000_1011_1000_1011_1000_1011u32,
+            crate::types::Size::Long
+        ));
+    }
+
+    #[test]
+    fn test_is_overflow() {
+        let a = 0x0Fu32;
+        let b = 0xFAu32;
+        assert!(is_overflow(a, b, a+b, Size::Byte));
     }
 }

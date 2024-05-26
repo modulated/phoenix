@@ -1,7 +1,7 @@
 # Phoenix
 
 🐦‍🔥
-A 68000 CPU emulator.
+A Motorola 68000 CPU emulator.
 
 Work in progress.
 
@@ -16,89 +16,105 @@ Work in progress.
 
 ### Moves
 
--   [ ] MOVE
--   [ ] MOVEA
--   [ ] MOVEP
+-   [x] CLR
 -   [ ] EXG
--   [ ] LEA
+-   [x] LEA
+-   [x] MOVE
+-   [ ] MOVEA
+-   [ ] MOVEtoCCR
+-   [x] MOVEfromSR
+-   [ ] MOVEtoSR
+-   [ ] MOVE USP
+-   [ ] MOVEM
+-   [ ] MOVEP
+-   [x] MOVEQ
+-   [ ] SWAP
 
 ### Arithmetic
 
--   [ ] ADD
+-   [x] ADD
 -   [ ] ADDA
--   [ ] ADDI
+-   [x] ADDI
 -   [ ] ADDQ
 -   [ ] ADDX
+-   [ ] DIVS
+-   [ ] DIVU
+-   [ ] MULS
+-   [ ] MULU
 -   [ ] SUB
 -   [ ] SUBA
 -   [ ] SUBI
 -   [ ] SUBQ
 -   [ ] SUBX
--   [ ] MULU
--   [ ] MULS
--   [ ] DIVU
--   [ ] DIVS
 
 ### Logic
 
--   [ ] CMP
 -   [ ] AND
 -   [ ] ANDI
 -   [ ] ANDItoCCR
 -   [ ] ANDItoSR
--   [ ] OR
--   [ ] ORI
--   [ ] ORItoCCR
--   [ ] ORItoSR
+-   [ ] CMP
+-   [ ] CMPA
+-   [ ] CMPI
+-   [ ] CMPM
 -   [ ] EOR
 -   [ ] EORI
--   [ ] NOT
+-   [ ] EORItoCCR
+-   [ ] EORItoSR
 -   [ ] NEG
 -   [ ] NEGX
--   [x] CLR
+-   [ ] NOT
+-   [ ] OR
+-   [x] ORI
+-   [ ] ORItoCCR
+-   [ ] ORItoSR
 
 ### Control Flow
 
--   [ ] BRA
--   [ ] BSR
--   [ ] Bcc
--   [ ] JMP
--   [ ] JSR
--   [ ] RTS
+-   [ ] BCC
+-   [x] BRA
+-   [x] BSR
+-   [ ] DBCC
+-   [ ] ILLEGAL
+-   [x] JMP
+-   [x] JSR
+-   [ ] NOP
+-   [ ] RESET
 -   [ ] RTE
+-   [ ] RTR
+-   [x] RTS
+-   [ ] SCC
+-   [ ] STOP
+-   [ ] TAS
 -   [ ] TRAP
+-   [ ] TRAPV
+-   [ ] TST
 
 ### Stack
 
--   [ ] LINK
--   [ ] UNLK
--   [ ] PEA
--   [ ] MOVEtoSR
--   [ ] MOVEfromSR
--   [ ] MOVEtoCCR
--   [ ] MOVEfromCCR
--   [ ] MOVEtoUSP
--   [ ] MOVEfromUSP
 -   [ ] CHK
--   [ ] TAS
--   [ ] NOP
--   [ ] RESET
--   [ ] STOP
--   [ ] RTE
+-   [x] LINK
+-   [ ] PEA
+-   [ ] UNLK
 
-### Bitshifts
+### Bitwise Operations
 
 -   [ ] ASL
 -   [ ] ASR
+-   [ ] BCHG
+-   [ ] BCLR
+-   [ ] BSET
+-   [ ] BTST
+-   [ ] EXT
 -   [ ] LSL
 -   [ ] LSR
 -   [ ] ROL
 -   [ ] ROR
 -   [ ] ROXL
 -   [ ] ROXR
--   [ ] SWAP
--   [ ] BCHG
--   [ ] BCLR
--   [ ] BSET
--   [ ] BTST
--   [ ] EXT
+
+### BCD
+
+-   [ ] ABCD
+-   [ ] NBCD
+-   [ ] SBCD

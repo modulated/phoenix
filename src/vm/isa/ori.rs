@@ -1,4 +1,11 @@
-use crate::vm::cpu::Cpu;
+use log::trace;
+
+use crate::{
+    types::{AddressingMode, Size},
+    util::{get_size, SizeCoding},
+    vm::cpu::Cpu,
+    StatusRegister as SR,
+};
 
 impl<'a> Cpu<'a> {
     pub(super) fn ori_family(&mut self, inst: u16) {
@@ -19,7 +26,22 @@ impl<'a> Cpu<'a> {
         todo!()
     }
 
-    fn ori(&mut self, _inst: u16) {
-        todo!()
+    fn ori(&mut self, inst: u16) {
+        let size = get_size(inst, 6, SizeCoding::Pink);
+        let ea = AddressingMode::from(inst);
+        let mut val = self.read_ea(ea, size);
+        let imm = match size {
+            Size::Byte => (self.fetch_word() & 0xFF) as u32,
+            Size::Word => self.fetch_word() as u32,
+            Size::Long => self.fetch_long(),
+        };
+        val |= imm;
+        self.write_ea(ea, size, val);
+        self.write_ccr(SR::N, val.is_bit_set(-1));
+        self.write_ccr(SR::Z, val == 0);
+        self.write_ccr(SR::V, false);
+        self.write_ccr(SR::C, false);
+
+        trace!("ORI {ea:?}: {val} | {imm:#X} {size:?}");
     }
 }

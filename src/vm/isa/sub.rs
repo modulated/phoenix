@@ -1,6 +1,7 @@
+use log::trace;
+
 use crate::{
-    types::{AddressingMode, Size},
-    vm::cpu::Cpu,
+    types::{AddressingMode, Size}, util::{get_size, SizeCoding}, vm::cpu::Cpu
 };
 
 impl<'a> Cpu<'a> {
@@ -22,12 +23,12 @@ impl<'a> Cpu<'a> {
     }
 
     fn suba(&mut self, reg: u8, ea: AddressingMode, size: Size) {
-        println!("SUBA {size:?} An:{reg} EA:{ea:?}");
+        trace!("SUBA {size:?} An:{reg} EA:{ea:?}");
         todo!()
     }
 
     fn sub_dn(&mut self, reg: u8, ea: AddressingMode, size: Size) {
-        println!("SUB {size:?} Dn:{reg} EA:{ea:?}");
+        trace!("SUB {size:?} Dn:{reg} EA:{ea:?}");
         let val = match size {
             Size::Byte => self.read_ea_byte(ea) as u32,
             Size::Word => self.read_ea_word(ea) as u32,
@@ -39,7 +40,15 @@ impl<'a> Cpu<'a> {
     }
 
     fn sub_ea(&mut self, reg: u8, ea: AddressingMode, size: Size) {
-        println!("SUB {size:?} EA:{ea:?} Dn:{reg}");
+        trace!("SUB {size:?} EA:{ea:?} Dn:{reg}");
+        todo!()
+    }
+
+    pub (crate) fn subi(&mut self, inst: u16) {
+        let size = get_size(inst, 6, SizeCoding::Pink);
+        let ea = AddressingMode::from(inst);
+        let val = self.read_ea(ea, size);
+        trace!("SUBI.{size} {ea:?}: {val}");
         todo!()
     }
 }

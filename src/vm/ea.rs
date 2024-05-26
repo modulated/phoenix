@@ -3,39 +3,60 @@ use crate::types::{AddressingMode, ExtensionMode, Size, Value};
 use crate::util::{sign_extend_16_to_32, sign_extend_8_to_32};
 
 impl<'a> Cpu<'a> {
-    pub fn read_ea(&mut self, mode: AddressingMode, size: Size) -> Value {
-        use Value::*;
-        match size {
-            Size::Byte => Byte(self.read_ea_byte(mode)),
-            Size::Word => Word(self.read_ea_word(mode)),
-            Size::Long => Long(self.read_ea_long(mode)),
+    pub fn get_jmp_address(&mut self, ea: AddressingMode) -> u32 {
+        match ea {
+            AddressingMode::DataRegisterDirect(_) => unreachable!(),
+            AddressingMode::AddressRegisterDirect(_) => unreachable!(),
+            AddressingMode::AddressRegisterIndirect(r) => self.read_ar(r),
+            AddressingMode::AddressRegisterIndirectPostIncrement(_) => unreachable!(),
+            AddressingMode::AddressRegisterIndirectPreDecrement(_) => unreachable!(),
+            AddressingMode::AddressRegisterIndirectDisplacement(_) => todo!(),
+            AddressingMode::AddressRegisterIndirectIndex(_) => todo!(),
+            AddressingMode::Extension(e) => {
+                match e {
+                    ExtensionMode::Word => self.fetch_word() as u32,
+                    ExtensionMode::Long => self.fetch_long(),
+                    ExtensionMode::PcRelativeDisplacement => todo!(),
+                    ExtensionMode::PcRelativeIndex => todo!(),
+                    ExtensionMode::Immediate => unreachable!(),
+                }
+            }
         }
     }
 
-    pub fn write_ea(&mut self, mode: AddressingMode, size: Size, val: Value) {
+    pub fn read_ea(&mut self, ea: AddressingMode, size: Size) -> Value {
+        use Value::*;
+        match size {
+            Size::Byte => Byte(self.read_ea_byte(ea)),
+            Size::Word => Word(self.read_ea_word(ea)),
+            Size::Long => Long(self.read_ea_long(ea)),
+        }
+    }
+
+    pub fn write_ea(&mut self, ea: AddressingMode, size: Size, val: Value) {
         use Value::*;
         match size {
             Size::Byte => match val {
-                Byte(v) => self.write_ea_byte(mode, v),
-                Word(v) => self.write_ea_byte(mode, v as u8),
-                Long(v) => self.write_ea_byte(mode, v as u8),
+                Byte(v) => self.write_ea_byte(ea, v),
+                Word(v) => self.write_ea_byte(ea, v as u8),
+                Long(v) => self.write_ea_byte(ea, v as u8),
             },
             Size::Word => match val {
-                Byte(v) => self.write_ea_word(mode, v as u16),
-                Word(v) => self.write_ea_word(mode, v),
-                Long(v) => self.write_ea_word(mode, v as u16),
+                Byte(v) => self.write_ea_word(ea, v as u16),
+                Word(v) => self.write_ea_word(ea, v),
+                Long(v) => self.write_ea_word(ea, v as u16),
             },
             Size::Long => match val {
-                Byte(v) => self.write_ea_long(mode, v as u32),
-                Word(v) => self.write_ea_long(mode, v as u32),
-                Long(v) => self.write_ea_long(mode, v),
+                Byte(v) => self.write_ea_long(ea, v as u32),
+                Word(v) => self.write_ea_long(ea, v as u32),
+                Long(v) => self.write_ea_long(ea, v),
             },
         }
     }
 
-    pub fn read_ea_byte(&mut self, mode: AddressingMode) -> u8 {
+    pub fn read_ea_byte(&mut self, ea: AddressingMode) -> u8 {
         use AddressingMode::*;
-        match mode {
+        match ea {
             DataRegisterDirect(reg) => self.read_dr(reg) as u8,
             AddressRegisterDirect(reg) => self.read_ar(reg) as u8,
             AddressRegisterIndirect(reg) => {
@@ -88,8 +109,8 @@ impl<'a> Cpu<'a> {
         }
     }
 
-    pub fn write_ea_byte(&mut self, mode: AddressingMode, val: u8) {
-        match mode {
+    pub fn write_ea_byte(&mut self, ea: AddressingMode, val: u8) {
+        match ea {
             AddressingMode::DataRegisterDirect(reg) => self.write_dr(reg, val as u32),
             AddressingMode::AddressRegisterIndirect(reg) => {
                 assert!(reg < 7);
@@ -131,9 +152,9 @@ impl<'a> Cpu<'a> {
         }
     }
 
-    pub fn read_ea_word(&mut self, mode: AddressingMode) -> u16 {
+    pub fn read_ea_word(&mut self, ea: AddressingMode) -> u16 {
         use AddressingMode::*;
-        match mode {
+        match ea {
             DataRegisterDirect(reg) => self.read_dr(reg) as u16,
             AddressRegisterDirect(reg) => self.read_ar(reg) as u16,
             AddressRegisterIndirect(reg) => {
@@ -186,8 +207,8 @@ impl<'a> Cpu<'a> {
         }
     }
 
-    pub fn write_ea_word(&mut self, mode: AddressingMode, val: u16) {
-        match mode {
+    pub fn write_ea_word(&mut self, ea: AddressingMode, val: u16) {
+        match ea {
             AddressingMode::DataRegisterDirect(reg) => self.write_dr(reg, val as u32),
             AddressingMode::AddressRegisterIndirect(reg) => {
                 assert!(reg < 7);
@@ -229,9 +250,9 @@ impl<'a> Cpu<'a> {
         }
     }
 
-    pub fn read_ea_long(&mut self, mode: AddressingMode) -> u32 {
+    pub fn read_ea_long(&mut self, ea: AddressingMode) -> u32 {
         use AddressingMode::*;
-        match mode {
+        match ea {
             DataRegisterDirect(reg) => self.read_dr(reg),
             AddressRegisterDirect(reg) => self.read_ar(reg),
             AddressRegisterIndirect(reg) => {
@@ -291,8 +312,8 @@ impl<'a> Cpu<'a> {
         }
     }
 
-    pub fn write_ea_long(&mut self, mode: AddressingMode, val: u32) {
-        match mode {
+    pub fn write_ea_long(&mut self, ea: AddressingMode, val: u32) {
+        match ea {
             AddressingMode::DataRegisterDirect(reg) => self.write_dr(reg, val),
             AddressingMode::AddressRegisterIndirect(reg) => {
                 assert!(reg < 7);

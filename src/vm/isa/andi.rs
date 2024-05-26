@@ -1,3 +1,5 @@
+use log::trace;
+
 use crate::vm::cpu::Cpu;
 
 impl<'a> Cpu<'a> {
@@ -15,14 +17,14 @@ impl<'a> Cpu<'a> {
     fn andi_to_ccr(&mut self) {
         let operand = self.fetch_word();
         // TODO: flags - self.sr &= operand & 0b0000_0000_0001_1111;
-        println!("ANDI_TO_CCR {operand:x}");
+        trace!("ANDI_TO_CCR {operand:x}");
         todo!()
     }
 
     fn andi_to_sr(&mut self) {
         let operand = self.fetch_word();
         // TODO: flags - self.sr &= operand & 0b0000_0000_0001_1111;
-        println!("ANDI_TO_SR {operand:x}");
+        trace!("ANDI_TO_SR {operand:x}");
         todo!()
     }
 

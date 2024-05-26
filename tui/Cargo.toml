@@ -4,6 +4,9 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-crossterm = "*"
-ratatui = "*"
+crossterm = "0.27"
+ratatui = "0.26"
 phoenix = {path = "../"}
+log = "0.4"
+simplelog = "0.12"
+clap = "4.5"

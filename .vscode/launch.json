@@ -1,0 +1,83 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'tui'",
+            "cargo": {
+                "args": ["build", "--bin=tui", "--package=tui"],
+                "filter": {
+                    "name": "tui",
+                    "kind": "bin"
+                }
+            },
+            "args": ["roms/jmp.bin", "-p0"],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'tui'",
+            "cargo": {
+                "args": ["test", "--no-run", "--bin=tui", "--package=tui"],
+                "filter": {
+                    "name": "tui",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'phoenix'",
+            "cargo": {
+                "args": ["test", "--no-run", "--lib", "--package=phoenix"],
+                "filter": {
+                    "name": "phoenix",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'phoenix'",
+            "cargo": {
+                "args": ["build", "--bin=phoenix", "--package=phoenix"],
+                "filter": {
+                    "name": "phoenix",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'phoenix'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=phoenix",
+                    "--package=phoenix"
+                ],
+                "filter": {
+                    "name": "phoenix",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}

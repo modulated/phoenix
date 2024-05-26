@@ -1,3 +1,5 @@
+use log::trace;
+
 use crate::{
     types::AddressingMode,
     util::{get_bits, get_size, SizeCoding},
@@ -29,7 +31,7 @@ impl<'a> Cpu<'a> {
         let size = get_size(inst, 6, SizeCoding::Pink);
         let ea = AddressingMode::from(inst);
         let val = self.read_ea(ea, size);
-        //// println!("SUBQ {sub} {ea:?}: {val:X}");
+        trace!("SUBQ {sub} {ea:?}: {val:X}");
         self.write_ea(ea, size, val - sub);
         // TODO: flags
     }
