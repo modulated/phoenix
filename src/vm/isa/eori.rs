@@ -1,10 +1,10 @@
-use log::trace;
+use log::{error, trace};
 
 use crate::{
     types::{AddressingMode, Value},
     util::{get_size, is_negative},
     vm::cpu::Cpu,
-    StatusRegister as SR,
+    StatusRegister as SR, Vector,
 };
 
 impl<'a> Cpu<'a> {
@@ -19,11 +19,21 @@ impl<'a> Cpu<'a> {
     }
 
     fn eori_to_sr(&mut self) {
-        todo!()
+        if !self.is_supervisor_mode() {
+            error!("Not supervisor");
+            self.trap_vec(Vector::PrivilegeViolation as u32);
+        }
+        let val = self.fetch_word();
+        let old = self.read_sr();
+        trace!("EORI to SR {val:#018b}");
+        self.write_sr(old ^ (val & 0b1010_0111_1111_1111));
     }
 
     fn eori_to_ccr(&mut self) {
-        todo!()
+        let val = self.fetch_word() & 0xFF;
+        let old = self.read_sr();
+        trace!("EORI to CCR {val:#010b}");
+        self.write_sr((old & 0xFF00) + ((old & 0xFF) ^ val));
     }
 
     fn eori(&mut self, inst: u16) {

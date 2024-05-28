@@ -1,6 +1,6 @@
-use log::trace;
+use log::{error, trace};
 
-use crate::{types::AddressingMode, util::get_size, vm::cpu::Cpu};
+use crate::{types::AddressingMode, util::get_size, vm::cpu::Cpu, Vector};
 
 impl<'a> Cpu<'a> {
     pub(super) fn andi_family(&mut self, inst: u16) {
@@ -15,17 +15,21 @@ impl<'a> Cpu<'a> {
     }
 
     fn andi_to_ccr(&mut self) {
-        let operand = self.fetch_word();
-        // TODO: flags - self.sr &= operand & 0b0000_0000_0001_1111;
-        trace!("ANDI_TO_CCR {operand:x}");
-        todo!()
+        let val = self.fetch_word() & 0xFF;
+        let old = self.read_sr();
+        trace!("ANDI to CCR {val:#010b}");
+        self.write_sr((old & 0xFF00) + ((old & 0xFF) & val));
     }
 
     fn andi_to_sr(&mut self) {
-        let operand = self.fetch_word();
-        // TODO: flags - self.sr &= operand & 0b0000_0000_0001_1111;
-        trace!("ANDI_TO_SR {operand:x}");
-        todo!()
+        if !self.is_supervisor_mode() {
+            error!("Not supervisor");
+            self.trap_vec(Vector::PrivilegeViolation as u32);
+        }
+        let val = self.fetch_word();
+        let old = self.read_sr();
+        trace!("ANDI to SR {val:#018b}");
+        self.write_sr(old & (val & 0b1010_0111_1111_1111));
     }
 
     fn andi(&mut self, inst: u16) {

@@ -91,21 +91,21 @@ fn main() -> Result<()> {
                 .borders(Borders::all())
                 .title("Instructions");
 
-            let layout = Layout::default()
-                .direction(Direction::Horizontal)
-                .constraints(Constraint::from_percentages(vec![50, 50]))
-                .split(layout_vert[0]);
+            // let layout_hor = Layout::default()
+            //     .direction(Direction::Horizontal)
+            //     .constraints(Constraint::from_percentages(vec![50, 50]))
+            //     .split(layout_vert[0]);
             let sub_right = Layout::default()
                 .direction(Direction::Vertical)
                 .constraints(Constraint::from_percentages(vec![50, 50]))
-                .split(layout[1]);
+                .split(layout_vert[0]);
 
             frame.render_widget(create_log_widget(&log), layout_vert[1]);
 
-            frame.render_widget(
-                Block::default().borders(Borders::all()).title("Memory"),
-                layout[0],
-            );
+            // frame.render_widget(
+            //     Block::default().borders(Borders::all()).title("Memory"),
+            //     layout_hor[0],
+            // );
             frame.render_widget(reg_block.clone(), sub_right[0]);
             frame.render_widget(inst_block.clone(), sub_right[1]);
 
@@ -246,12 +246,12 @@ fn create_reg_widget(vm: &VM) -> impl Widget {
                 "PC".to_string(),
                 format!("{:#010X}", vm.read_pc()),
                 "SR".to_string(),
-                format!("{:08b}", vm.cpu.read_sr()),
+                format!("{:#018b}", vm.cpu.read_sr()),
             ]),
             Row::new(vec![
                 "".to_string(),
                 "Time:".to_string(),
-                format!("{} nanos", vm.inst_time).to_string(),
+                format!("{} ns", vm.inst_time).to_string(),
                 format!("{} MHz", 1000000 / vm.inst_time).to_string(),
             ]),
         ],

@@ -19,15 +19,21 @@ impl<'a> Cpu<'a> {
     }
 
     fn ori_to_ccr(&mut self) {
-        todo!()
+        let val = self.fetch_word() & 0xFF;
+        let old = self.read_sr();
+        trace!("ORI to CCR {val:#010b}");
+        self.write_sr((old & 0xFF00) + ((old & 0xFF) | val));
     }
 
     fn ori_to_sr(&mut self) {
         if !self.is_supervisor_mode() {
             error!("Not supervisor");
-            self.trap_vec(Vector::PrivelageViolation as u32);
+            self.trap_vec(Vector::PrivilegeViolation as u32);
         }
-        todo!()
+        let val = self.fetch_word();
+        let old = self.read_sr();
+        trace!("ORI to SR {val:#018b}");
+        self.write_sr(old | (val & 0b1010_0111_1111_1111));
     }
 
     fn ori(&mut self, inst: u16) {

@@ -75,16 +75,17 @@ impl<'a> Cpu<'a> {
     fn move_to_sr(&mut self, inst: u16) {
         if !self.is_supervisor_mode() {
             error!("Not supervisor");
-            self.trap_vec(Vector::PrivelageViolation as u32);
+            self.trap_vec(Vector::PrivilegeViolation as u32);
         }
         let ea = AddressingMode::from(inst);
-        let val = 0b1010_0111_0001_1111 & self.read_ea_word(ea);
+        let val = 0b1010_0111_1111_1111 & self.read_ea_word(ea);
         trace!("MOVE TO SR {ea} ({val:#018b})");
         self.write_sr(val);
     }
 
     fn illegal(&mut self) {
-        todo!()
+        trace!("ILLEGAL");
+        self.trap_vec(Vector::IllegalInstruction as u32);
     }
 
     fn tst(&mut self, _inst: u16) {
@@ -105,12 +106,12 @@ impl<'a> Cpu<'a> {
     fn link(&mut self, inst: u16) {
         let reg = get_reg(inst, 0);
         let val = self.read_ar(reg);
-        let disp = self.fetch_signed_word();
+        let displacement = self.fetch_signed_word();
         self.push_long(val);
-        let new_sp = (self.read_sp() as i64 + disp as i64) as u32;
+        let new_sp = (self.read_sp() as i64 + displacement as i64) as u32;
         self.write_ar(reg, self.read_sp());
         self.write_sp(new_sp);
-        trace!("LINK {reg} {disp}");
+        trace!("LINK {reg} {displacement}");
     }
 
     fn unlk(&mut self, inst: u16) {
@@ -130,7 +131,7 @@ impl<'a> Cpu<'a> {
     fn stop(&mut self) {
         if !self.is_supervisor_mode() {
             error!("Not supervisor");
-            self.trap_vec(Vector::PrivelageViolation as u32);
+            self.trap_vec(Vector::PrivilegeViolation as u32);
         }
         todo!()
     }
@@ -138,7 +139,7 @@ impl<'a> Cpu<'a> {
     fn rte(&mut self) {
         if !self.is_supervisor_mode() {
             error!("Not supervisor");
-            self.trap_vec(Vector::PrivelageViolation as u32);
+            self.trap_vec(Vector::PrivilegeViolation as u32);
         }
         todo!()
     }
@@ -250,7 +251,7 @@ impl<'a> Cpu<'a> {
     fn move_usp(&mut self, inst: u16) {
         if !self.is_supervisor_mode() {
             error!("Not supervisor");
-            self.trap_vec(Vector::PrivelageViolation as u32);
+            self.trap_vec(Vector::PrivilegeViolation as u32);
         }
         let reg = get_reg(inst, 0);
         if is_bit_set(inst, 3) {

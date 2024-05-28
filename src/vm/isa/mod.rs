@@ -5,6 +5,7 @@ mod add;
 mod andi;
 mod bit;
 mod branch;
+mod cmp;
 mod div;
 mod eori;
 mod mathq;
@@ -28,6 +29,7 @@ impl<'a> Cpu<'a> {
             0b0111_0000_0000_0000..=0b0111_1110_1111_1111 => self.moveq(inst),
             0b1000_0000_1100_0000..=0b1000_1110_1111_1111 => self.div_family(inst),
             0b1001_0000_0000_0000..=0b1001_1111_1111_1111 => self.sub_family(inst),
+            0b1011_0000_0000_0000..=0b1011_1111_1111_1111 => self.cmp_family(inst),
             0b1100_0000_1100_0000..=0b1100_1110_1111_1111 => self.mul_family(inst),
             0b1101_0000_0000_0000..=0b1101_1111_1111_1111 => self.add_family(inst),
             0b1110_0000_0000_0000..=0b1110_1111_1111_1111 => self.rot_family(inst),

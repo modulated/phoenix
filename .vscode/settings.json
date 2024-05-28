@@ -1,0 +1,19 @@
+{
+    "cSpell.enableFiletypes": ["!markdown"],
+    "cSpell.words": [
+        "andi",
+        "cmpa",
+        "cmpm",
+        "Crossterm",
+        "eori",
+        "mathq",
+        "Memview",
+        "movea",
+        "movem",
+        "moveq",
+        "nbcd",
+        "negx",
+        "trapv",
+        "unlk"
+    ]
+}

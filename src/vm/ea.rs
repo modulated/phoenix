@@ -252,7 +252,7 @@ impl<'a> Cpu<'a> {
             DataRegisterDirect(reg) => self.read_dr(reg),
             AddressRegisterDirect(reg) => self.read_ar(reg),
             AddressRegisterIndirect(reg) => {
-                assert!(reg < 7);
+                assert!(reg < 8);
                 self.mmu.read_long(self.read_ar(reg))
             }
             AddressRegisterIndirectPostIncrement(reg) => {

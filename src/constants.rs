@@ -7,7 +7,7 @@ pub enum Vector {
     DivByZero = 0x14,
     Chk = 0x18,
     TrapV = 0x1C,
-    PrivelageViolation = 0x20,
+    PrivilegeViolation = 0x20,
     Trace = 0x24,
     UnimplementedA = 0x28,
     UnimplementedF = 0x2C,

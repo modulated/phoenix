@@ -41,6 +41,7 @@ pub(crate) fn is_negative<T: Into<u32>>(val: T, size: Size) -> bool {
     }
 }
 
+// TODO: this needs fixing
 pub(crate) fn is_carry(val1: u32, val2: u32, res: u32, size: Size) -> bool {
     match size {
         Size::Byte => val1 as u8 > res as u8 || val2 as u8 > res as u8,
@@ -49,6 +50,7 @@ pub(crate) fn is_carry(val1: u32, val2: u32, res: u32, size: Size) -> bool {
     }
 }
 
+// TODO: this needs fixing
 pub(crate) fn is_overflow(val1: u32, val2: u32, res: u32, size: Size) -> bool {
     match size {
         Size::Byte => (val1 & 0x80) == (val2 & 0x80) && (val1 & 0x80 != res & 0x80),

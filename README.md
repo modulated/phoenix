@@ -9,6 +9,9 @@ Work in progress.
 
 -   [ ] Implement all instructions
 -   [ ] Boot sequence
+-   [ ] Memory map
+-   [ ] Display output
+-   [ ] Complex program
 -   [ ] Extensible API
 -   [ ] Test runner
 
@@ -51,23 +54,23 @@ Work in progress.
 
 -   [x] AND
 -   [ ] ANDI
--   [ ] ANDItoCCR
--   [ ] ANDItoSR
--   [ ] CMP
--   [ ] CMPA
+-   [x] ANDItoCCR
+-   [x] ANDItoSR
+-   [x] CMP
+-   [x] CMPA
 -   [ ] CMPI
 -   [ ] CMPM
 -   [ ] EOR
 -   [x] EORI
--   [ ] EORItoCCR
--   [ ] EORItoSR
+-   [x] EORItoCCR
+-   [x] EORItoSR
 -   [ ] NEG
 -   [ ] NEGX
 -   [x] NOT
 -   [x] OR
 -   [x] ORI
--   [ ] ORItoCCR
--   [ ] ORItoSR
+-   [x] ORItoCCR
+-   [x] ORItoSR
 
 ### Control Flow
 
@@ -76,10 +79,10 @@ Work in progress.
 -   [x] BSR
 -   [x] DBCC
 -   [x] HALT
--   [ ] ILLEGAL
+-   [x] ILLEGAL
 -   [x] JMP
 -   [x] JSR
--   [ ] NOP
+-   [x] NOP
 -   [ ] RESET
 -   [ ] RTE
 -   [ ] RTR
