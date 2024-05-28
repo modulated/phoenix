@@ -6,3 +6,5 @@ pub use args::Args;
 mod types;
 mod util;
 pub use vm::StatusRegister;
+mod constants;
+pub use constants::*;

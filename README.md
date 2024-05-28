@@ -87,13 +87,13 @@ Work in progress.
 -   [ ] SCC
 -   [ ] STOP
 -   [ ] TAS
--   [ ] TRAP
+-   [x] TRAP
 -   [ ] TRAPV
 -   [ ] TST
 
 ### Stack
 
--   [ ] CHK
+-   [x] CHK
 -   [x] LINK
 -   [x] PEA
 -   [x] UNLK

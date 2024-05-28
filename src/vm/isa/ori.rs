@@ -1,10 +1,10 @@
-use log::trace;
+use log::{error, trace};
 
 use crate::{
     types::{AddressingMode, Size},
     util::{get_size, SizeCoding},
     vm::cpu::Cpu,
-    StatusRegister as SR,
+    StatusRegister as SR, Vector,
 };
 
 impl<'a> Cpu<'a> {
@@ -24,7 +24,8 @@ impl<'a> Cpu<'a> {
 
     fn ori_to_sr(&mut self) {
         if !self.is_supervisor_mode() {
-            panic!("Not supervisor")
+            error!("Not supervisor");
+            self.trap_vec(Vector::PrivelageViolation as u32);
         }
         todo!()
     }

@@ -79,8 +79,20 @@ impl<'a> Cpu<'a> {
 
     pub fn pop_long(&mut self) -> u32 {
         let pc = self.read_sp();
-        self.write_ar(Cpu::STACK, pc + 4);
+        self.write_sp( pc + 4);
         self.mmu.read_long(pc)
+    }
+
+    pub fn push_word(&mut self, val: u16) {
+        let new = self.read_sp() - 2;
+        self.write_sp(new);
+        self.mmu.write_word(new, val);
+    }
+
+    pub fn pop_word(&mut self) -> u16 {
+        let pc = self.read_sp();
+        self.write_sp(pc + 4);
+        self.mmu.read_word(pc)
     }
 
     pub fn is_supervisor_mode(&self) -> bool {
@@ -230,6 +242,15 @@ impl<'a> Cpu<'a> {
         self.usp = val;
     }
 
+    pub fn trap_vec(&mut self, addr: u32) {
+        let mut sr = self.read_sr();
+        sr |= 0b0010_0000_0000_0000;
+        self.write_sr(sr);
+        self.push_long(self.read_pc());
+        self.push_word(sr);
+        self.write_pc(addr);
+    }
+
     pub fn test_cc(&self, cc: ConditionCode) -> bool {
         match cc {
             ConditionCode::True => true,
@@ -306,7 +327,7 @@ mod test_stack {
     #[test]
     fn test_long_stack() {
         let mut cpu = Cpu::default();
-        cpu.write_ar(Cpu::STACK, 0xFFF0);
+        cpu.write_sp(0xFFF0);
         cpu.push_long(0xFAFABABA);
         cpu.push_long(0xABBA1050);
         assert_eq!(cpu.pop_long(), 0xABBA1050);

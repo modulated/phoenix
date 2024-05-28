@@ -1,4 +1,4 @@
-use log::trace;
+use log::{error, trace};
 
 use crate::{
     types::{AddressingMode, ExtensionMode, Size, Value},
@@ -7,7 +7,7 @@ use crate::{
         SizeCoding,
     },
     vm::cpu::Cpu,
-    StatusRegister as SR,
+    StatusRegister as SR, Vector,
 };
 
 impl<'a> Cpu<'a> {
@@ -74,7 +74,8 @@ impl<'a> Cpu<'a> {
 
     fn move_to_sr(&mut self, inst: u16) {
         if !self.is_supervisor_mode() {
-            panic!("Not supervisor")
+            error!("Not supervisor");
+            self.trap_vec(Vector::PrivelageViolation as u32);
         }
         let ea = AddressingMode::from(inst);
         let val = 0b1010_0111_0001_1111 & self.read_ea_word(ea);
@@ -94,8 +95,11 @@ impl<'a> Cpu<'a> {
         todo!()
     }
 
-    fn trap(&mut self, _inst: u16) {
-        todo!()
+    fn trap(&mut self, inst: u16) {
+        let vec = inst as u32 & 0b1111;
+        error!("TRAP {vec}");
+        self.trap_vec(vec * 4 + Vector::Trap as u32);
+        todo!();        
     }
 
     fn link(&mut self, inst: u16) {
@@ -125,14 +129,16 @@ impl<'a> Cpu<'a> {
 
     fn stop(&mut self) {
         if !self.is_supervisor_mode() {
-            panic!("Not supervisor")
+            error!("Not supervisor");
+            self.trap_vec(Vector::PrivelageViolation as u32);
         }
         todo!()
     }
 
     fn rte(&mut self) {
         if !self.is_supervisor_mode() {
-            panic!("Not supervisor")
+            error!("Not supervisor");
+            self.trap_vec(Vector::PrivelageViolation as u32);
         }
         todo!()
     }
@@ -243,7 +249,8 @@ impl<'a> Cpu<'a> {
 
     fn move_usp(&mut self, inst: u16) {
         if !self.is_supervisor_mode() {
-            panic!("Not supervisor")
+            error!("Not supervisor");
+            self.trap_vec(Vector::PrivelageViolation as u32);
         }
         let reg = get_reg(inst, 0);
         if is_bit_set(inst, 3) {
@@ -340,8 +347,21 @@ impl<'a> Cpu<'a> {
         self.push_long(val);
     }
 
-    fn chk(&mut self, _inst: u16) {
-        todo!()
+    fn chk(&mut self, inst: u16) {
+        let size = get_size(inst, 7, SizeCoding::Purple);
+        let reg = get_reg(inst, 9);
+        let val1 = self.read_dr(reg);
+        let ea = AddressingMode::from(inst);
+        let val2 = u32::from(self.read_ea(ea, size)) as i32;
+        trace!("CHK.{size} {ea} ({val2:#X}) D{reg}");
+        if (val1 as i32) < 0 {
+            self.write_ccr(SR::N, true);
+            self.trap_vec(Vector::Chk as u32);
+        }
+        if (val1 as i32) > val2 {
+            self.write_ccr(SR::N, false);
+            self.trap_vec(Vector::Chk as u32);
+        }        
     }
 
     fn jsr(&mut self, inst: u16) {
