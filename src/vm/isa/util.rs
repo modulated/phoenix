@@ -2,13 +2,19 @@ use log::trace;
 
 use crate::{
     types::{AddressingMode, ExtensionMode, Size, Value},
-    util::{get_reg, get_size, is_bit_set, SizeCoding},
+    util::{
+        get_reg, get_size, is_bit_set, is_negative, sign_extend_16_to_32, sign_extend_8_to_16,
+        SizeCoding,
+    },
     vm::cpu::Cpu,
     StatusRegister as SR,
 };
 
 impl<'a> Cpu<'a> {
     pub(super) fn util_family(&mut self, inst: u16) {
+        if (inst & 0b0000_1111_1011_1000) == 0b0000_1000_1000_0000 {
+            return self.ext(inst);
+        }
         if (inst & 0b0000_0001_1100_0000) == 0b0000_0001_1100_0000 {
             return self.lea(inst);
         }
@@ -28,11 +34,10 @@ impl<'a> Cpu<'a> {
             0b0100_0000_0000_0000..=0b0100_0000_1011_1111 => self.negx(inst),
             0b0100_0010_0000_0000..=0b0100_0010_1111_1111 => self.clr(inst),
             0b0100_0100_0000_0000..=0b0100_0100_1011_1111 => self.neg(inst),
-            0b0100_0110_0000_0000..=0b0100_0110_1011_1111 => self.neg(inst),
-            0b0100_1000_1000_0000..=0b0100_1000_1100_0111 => self.ext(inst),
-            // nbcd
-            // swap
-            // pea
+            0b0100_0110_0000_0000..=0b0100_0110_1011_1111 => self.not(inst),
+            0b0100_1000_0000_0000..=0b0100_1000_0011_1111 => self.nbcd(inst),
+            0b0100_1000_0100_0000..=0b0100_1000_0100_0111 => self.swap(inst),
+            0b0100_1000_0100_1000..=0b0100_1000_0111_1111 => self.pea(inst),
             0b0100_1010_1111_1100 => self.illegal(),
             0b0100_1010_0000_0000..=0b0100_1010_1011_1111 => self.tst(inst),
             0b0100_1010_1100_0000..=0b0100_1010_1111_1111 => self.tas(inst),
@@ -49,22 +54,32 @@ impl<'a> Cpu<'a> {
             0b0100_1110_0111_0111 => self.rtr(),
             0b0100_1110_1000_0000..=0b0100_1110_1011_1111 => self.jsr(inst),
             0b0100_1110_1100_0000..=0b0100_1110_1111_1111 => self.jmp(inst),
-            _ => panic!("Instruction Not Found"),
+            _ => unreachable!("{inst:018b}"),
         }
     }
     fn move_from_sr(&mut self, inst: u16) {
         let ea = AddressingMode::from(inst);
         let val = self.read_sr();
         self.write_ea_word(ea, val);
-        trace!("MOVE from SR {ea:?}: {val:X}")
+        trace!("MOVE from SR {ea}: {val:#018b}")
     }
 
-    fn move_to_ccr(&mut self, _inst: u16) {
-        todo!()
+    fn move_to_ccr(&mut self, inst: u16) {
+        let ea = AddressingMode::from(inst);
+        let val = 0b0001_1111 & self.read_ea_word(ea);
+        trace!("MOVE to CCR {ea} ({val:#05b})");
+        let new = (self.read_sr() & 0xFF00) + val;
+        self.write_sr(new);
     }
 
-    fn move_to_sr(&mut self, _inst: u16) {
-        todo!()
+    fn move_to_sr(&mut self, inst: u16) {
+        if !self.is_supervisor_mode() {
+            panic!("Not supervisor")
+        }
+        let ea = AddressingMode::from(inst);
+        let val = 0b1010_0111_0001_1111 & self.read_ea_word(ea);
+        trace!("MOVE TO SR {ea} ({val:#018b})");
+        self.write_sr(val);
     }
 
     fn illegal(&mut self) {
@@ -88,14 +103,18 @@ impl<'a> Cpu<'a> {
         let val = self.read_ar(reg);
         let disp = self.fetch_signed_word();
         self.push_long(val);
-        self.write_ar(reg, self.read_sp());
         let new_sp = (self.read_sp() as i64 + disp as i64) as u32;
+        self.write_ar(reg, self.read_sp());
         self.write_sp(new_sp);
-        trace!("{} LINK {reg} {disp}", self.read_pc());
+        trace!("LINK {reg} {disp}");
     }
 
-    fn unlk(&mut self, _inst: u16) {
-        todo!()
+    fn unlk(&mut self, inst: u16) {
+        let reg = get_reg(inst, 0);
+        trace!("UNLK A{reg}");
+        self.write_sp(self.read_ar(reg));
+        let new = self.pop_long();
+        self.write_ar(reg, new);
     }
 
     fn reset(&mut self) {
@@ -105,10 +124,16 @@ impl<'a> Cpu<'a> {
     fn nop(&mut self) {}
 
     fn stop(&mut self) {
+        if !self.is_supervisor_mode() {
+            panic!("Not supervisor")
+        }
         todo!()
     }
 
     fn rte(&mut self) {
+        if !self.is_supervisor_mode() {
+            panic!("Not supervisor")
+        }
         todo!()
     }
 
@@ -154,15 +179,15 @@ impl<'a> Cpu<'a> {
             });
 
             for reg in 0..8 {
-                // D
+                // Data
                 if is_bit_set(mask, reg) {
                     let val = self.mmu.read_long(cur);
-                    self.write_dr(reg, val);
+                    self.write_dr(reg, Size::Long, val);
                     cur += 4;
                 }
             }
             for reg in 0..8 {
-                // A
+                // Addr
                 if is_bit_set(mask >> 8, reg) {
                     let val = self.mmu.read_long(cur);
                     self.write_ar(reg, val);
@@ -216,14 +241,25 @@ impl<'a> Cpu<'a> {
         todo!()
     }
 
-    fn move_usp(&mut self, _inst: u16) {
-        todo!()
+    fn move_usp(&mut self, inst: u16) {
+        if !self.is_supervisor_mode() {
+            panic!("Not supervisor")
+        }
+        let reg = get_reg(inst, 0);
+        if is_bit_set(inst, 3) {
+            // USP => An
+            self.write_ar(reg, self.read_usp());
+        } else {
+            // An => USP
+            self.write_usp(self.read_ar(reg));
+        }
+        trace!("MOVE USP A{reg}");
     }
 
     fn lea(&mut self, inst: u16) {
         let reg = get_reg(inst, 9);
         let ea = AddressingMode::from(inst);
-        let val = self.read_ea_long(ea);
+        let val = self.get_ea(ea);
         trace!("LEA A{reg} {ea} ({val:#010X})");
         self.write_ar(reg, val);
     }
@@ -252,8 +288,56 @@ impl<'a> Cpu<'a> {
         todo!()
     }
 
-    fn ext(&mut self, _inst: u16) {
+    fn not(&mut self, inst: u16) {
+        let size = get_size(inst, 6, SizeCoding::Pink);
+        let ea = AddressingMode::from(inst);
+        let val = self.read_ea(ea, size);
+        let res: u32 = !(u32::from(val));
+        self.write_ea(ea, size, Value::Long(res));
+        trace!("NOT.{size} {ea} ({val})");
+        self.write_ccr(SR::N, is_negative(res, size));
+        self.write_ccr(SR::Z, res == 0);
+        self.write_ccr(SR::V, false);
+        self.write_ccr(SR::C, false);
+    }
+
+    fn ext(&mut self, inst: u16) {
+        let reg = get_reg(inst, 0);
+        let val = self.read_dr(reg);
+        let (res, size) = if is_bit_set(inst, 6) {
+            // Word to Long
+            (sign_extend_16_to_32(val as u16), Size::Word)
+        } else {
+            // Byte to Word
+            (sign_extend_8_to_16(val as u8) as u32, Size::Byte)
+        };
+        trace!("EXT D{reg}");
+        self.write_dr(reg, size, res);
+        self.write_ccr(SR::N, is_negative(val, size));
+        self.write_ccr(SR::Z, res == 0);
+        self.write_ccr(SR::V, false);
+        self.write_ccr(SR::C, false);
+    }
+
+    fn nbcd(&mut self, _inst: u16) {
         todo!()
+    }
+
+    fn swap(&mut self, inst: u16) {
+        let reg = get_reg(inst, 0);
+        let val = self.read_dr(reg);
+        let high = val >> 16;
+        let low = 0xFFFF & val;
+        let new = (low << 16) + high;
+        trace!("SWAP D{reg}");
+        self.write_dr(reg, Size::Long, new);
+    }
+
+    fn pea(&mut self, inst: u16) {
+        let ea = AddressingMode::from(inst);
+        let val = self.get_ea(ea);
+        trace!("PEA {ea} ({val:#X})");
+        self.push_long(val);
     }
 
     fn chk(&mut self, _inst: u16) {
@@ -262,7 +346,7 @@ impl<'a> Cpu<'a> {
 
     fn jsr(&mut self, inst: u16) {
         let ea = AddressingMode::from(inst);
-        let addr = self.get_jmp_address(ea);
+        let addr = self.get_ea(ea);
         trace!("JSR {ea} ({addr:#X})");
         self.push_long(self.read_pc());
         self.write_pc(addr);
@@ -270,8 +354,12 @@ impl<'a> Cpu<'a> {
 
     fn jmp(&mut self, inst: u16) {
         let ea = AddressingMode::from(inst);
-        let addr = self.get_jmp_address(ea);
+        let addr = self.get_ea(ea);
         trace!("JMP {ea} ({addr:#X})");
         self.write_pc(addr);
+    }
+
+    pub(crate) fn halt(&mut self) {
+        self.decrement_pc(2);
     }
 }

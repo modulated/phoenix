@@ -53,7 +53,9 @@ pub(crate) fn is_overflow(val1: u32, val2: u32, res: u32, size: Size) -> bool {
     match size {
         Size::Byte => (val1 & 0x80) == (val2 & 0x80) && (val1 & 0x80 != res & 0x80),
         Size::Word => (val1 & 0x8000) == (val2 & 0x8000) && (val1 & 0x8000 != res & 0x8000),
-        Size::Long => (val1 & 0x80000000) == (val2 & 0x80000000) && (val1 & 0x80000000 != res & 0x80000000),
+        Size::Long => {
+            (val1 & 0x80000000) == (val2 & 0x80000000) && (val1 & 0x80000000 != res & 0x80000000)
+        }
     }
 }
 
@@ -92,7 +94,10 @@ pub enum SizeCoding {
 
 #[cfg(test)]
 mod test {
-    use crate::{types::Size, util::{is_negative, is_overflow}};
+    use crate::{
+        types::Size,
+        util::{is_negative, is_overflow},
+    };
 
     use super::{get_bits, is_bit_set, sign_extend_16_to_32, sign_transmute};
     #[test]
@@ -150,6 +155,6 @@ mod test {
     fn test_is_overflow() {
         let a = 0x0Fu32;
         let b = 0xFAu32;
-        assert!(is_overflow(a, b, a+b, Size::Byte));
+        assert!(is_overflow(a, b, a + b, Size::Byte));
     }
 }

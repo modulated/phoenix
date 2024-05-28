@@ -1,6 +1,6 @@
 use log::trace;
 
-use crate::vm::cpu::Cpu;
+use crate::{types::AddressingMode, util::get_size, vm::cpu::Cpu};
 
 impl<'a> Cpu<'a> {
     pub(super) fn andi_family(&mut self, inst: u16) {
@@ -28,7 +28,11 @@ impl<'a> Cpu<'a> {
         todo!()
     }
 
-    fn andi(&mut self, _inst: u16) {
+    fn andi(&mut self, inst: u16) {
+        let size = get_size(inst, 6, crate::util::SizeCoding::Pink);
+        let ea = AddressingMode::from(inst);
+        let val = self.read_ea(ea, size);
+        trace!("ANDI.{size} {ea} ({val})");
         todo!()
     }
 }

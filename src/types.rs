@@ -203,14 +203,12 @@ impl Display for AddressingMode {
             AddressingMode::AddressRegisterIndirectPreDecrement(r) => write!(f, "-(A{})", r),
             AddressingMode::AddressRegisterIndirectDisplacement(r) => write!(f, "(d16,A{})", r),
             AddressingMode::AddressRegisterIndirectIndex(r) => write!(f, "(d16,A{},Xn)", r),
-            AddressingMode::Extension(e) => {
-                match e {
-                    ExtensionMode::Word => write!(f, "Abs Word"),
-                    ExtensionMode::Long => write!(f, "Abs Long"),
-                    ExtensionMode::PcRelativeDisplacement => write!(f, "d16(PC)"),
-                    ExtensionMode::PcRelativeIndex => write!(f, "d8(PC,Xn)"),
-                    ExtensionMode::Immediate => write!(f, "Immediate"),
-                }
+            AddressingMode::Extension(e) => match e {
+                ExtensionMode::Word => write!(f, "Abs Word"),
+                ExtensionMode::Long => write!(f, "Abs Long"),
+                ExtensionMode::PcRelativeDisplacement => write!(f, "d16(PC)"),
+                ExtensionMode::PcRelativeIndex => write!(f, "d8(PC,Xn)"),
+                ExtensionMode::Immediate => write!(f, "Immediate"),
             },
         }
     }
@@ -257,6 +255,29 @@ impl From<u8> for ConditionCode {
             0b1110 => GreatherThan,
             0b1111 => LessOrEqual,
             _ => unreachable!("Not 4 bit value"),
+        }
+    }
+}
+
+impl Display for ConditionCode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ConditionCode::True => write!(f, "T"),
+            ConditionCode::False => write!(f, "F"),
+            ConditionCode::Higher => write!(f, "HI"),
+            ConditionCode::LowerOrSame => write!(f, "LS"),
+            ConditionCode::CarryClear => write!(f, "CC"),
+            ConditionCode::CarrySet => write!(f, "CS"),
+            ConditionCode::NotEqual => write!(f, "NE"),
+            ConditionCode::Equal => write!(f, "EQ"),
+            ConditionCode::OverflowClear => write!(f, "VC"),
+            ConditionCode::OverflowSet => write!(f, "VS"),
+            ConditionCode::Plus => write!(f, "PL"),
+            ConditionCode::Minus => write!(f, "MI"),
+            ConditionCode::GreaterOrEqual => write!(f, "GE"),
+            ConditionCode::LessThan => write!(f, "LT"),
+            ConditionCode::GreatherThan => write!(f, "GT"),
+            ConditionCode::LessOrEqual => write!(f, "LE"),
         }
     }
 }

@@ -18,7 +18,7 @@ impl<'a> Cpu<'a> {
         } else {
             val as i64
         };
-        trace!("{:#08X} BRA {disp:#06X}", self.read_pc());
+        trace!("BRA {disp:#X}");
         self.write_pc((pc as i64 + disp) as u32);
     }
 
@@ -30,7 +30,7 @@ impl<'a> Cpu<'a> {
         } else {
             val as i64
         };
-        trace!("{:#08X} BSR {disp:#06X}", self.read_pc());
+        trace!("BSR {disp:#X}");
         self.push_long(pc);
         self.write_pc((pc as i64 + disp) as u32);
     }
@@ -44,7 +44,7 @@ impl<'a> Cpu<'a> {
         } else {
             disp as i16
         };
-        trace!("{:#08X} BCC {:?} {}", self.read_pc(), cc, disp);
+        trace!("B{cc} {disp:#X}");
         if self.test_cc(cc) {
             self.write_pc((pc as i64 + disp as i64) as u32);
         }

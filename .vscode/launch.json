@@ -15,7 +15,7 @@
                     "kind": "bin"
                 }
             },
-            "args": ["roms/jmp.bin", "-p0"],
+            "args": ["roms/link2.bin", "-p0"],
             "cwd": "${workspaceFolder}"
         },
         {

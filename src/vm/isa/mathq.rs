@@ -1,8 +1,8 @@
 use log::trace;
 
 use crate::{
-    types::AddressingMode,
-    util::{get_bits, get_size, SizeCoding},
+    types::{AddressingMode, ConditionCode},
+    util::{get_bits, get_reg, get_size, SizeCoding},
     vm::cpu::Cpu,
 };
 
@@ -40,7 +40,21 @@ impl<'a> Cpu<'a> {
         todo!()
     }
 
-    fn dbcc(&mut self, _inst: u16) {
-        todo!()
+    fn dbcc(&mut self, inst: u16) {
+        let cc = ConditionCode::from(get_bits(inst, 8, 3) as u8);
+        let reg = get_reg(inst, 0);
+        let pc = self.read_pc();
+        let displacement = self.fetch_signed_word();
+        trace!("DB{cc} D{reg}");
+        if !self.test_cc(cc) {
+            trace!("Cond false");
+            self.decrement_dr(reg, 1);
+            if self.read_dr(reg) != 0xFFFFFFFF {
+                let target = (pc as i64 + displacement as i64) as u32;
+                self.write_pc(target);
+            }
+        } else {
+            trace!("Cond true");
+        }
     }
 }

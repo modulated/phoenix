@@ -19,8 +19,13 @@ impl<'a> Widget for Memview<'a> {
     where
         Self: Sized,
     {
+        let height = if area.height % 2 == 0 {
+            area.height
+        } else {
+            area.height - 1
+        };
         let mut string = String::with_capacity(256);
-        let start_idx = self.pc.saturating_sub(area.height as usize);
+        let start_idx = self.pc.saturating_sub(height as usize);
         let end_idx = start_idx + (area.height * 2) as usize;
         for i in (start_idx..=end_idx).step_by(2) {
             string += &format_line(self.ram, i, i == self.pc);

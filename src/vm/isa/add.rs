@@ -1,8 +1,11 @@
- use log::trace;
+use log::trace;
 
 use crate::{
     types::{AddressingMode, Size, Value},
-    util::{get_bits, get_reg, get_size, is_bit_set, is_carry, is_negative, is_overflow, sign_extend_16_to_32, sign_extend_8_to_32, SizeCoding},
+    util::{
+        get_bits, get_reg, get_size, is_bit_set, is_carry, is_negative, is_overflow,
+        sign_extend_16_to_32, sign_extend_8_to_32, SizeCoding,
+    },
     vm::cpu::Cpu,
     StatusRegister as SR,
 };
@@ -36,12 +39,22 @@ impl<'a> Cpu<'a> {
         let val2 = self.read_dr(reg2);
 
         let res = match size {
-            Size::Byte => sign_extend_8_to_32((val1 as u8).wrapping_add(val2 as u8).wrapping_add(self.read_ccr(SR::X) as u8)),
-            Size::Word => sign_extend_16_to_32((val1 as u16).wrapping_add(val2 as u16).wrapping_add(self.read_ccr(SR::X) as u16)),
-            Size::Long => val1.wrapping_add(val2).wrapping_add(self.read_ccr(SR::X) as u32),
+            Size::Byte => sign_extend_8_to_32(
+                (val1 as u8)
+                    .wrapping_add(val2 as u8)
+                    .wrapping_add(self.read_ccr(SR::X) as u8),
+            ),
+            Size::Word => sign_extend_16_to_32(
+                (val1 as u16)
+                    .wrapping_add(val2 as u16)
+                    .wrapping_add(self.read_ccr(SR::X) as u16),
+            ),
+            Size::Long => val1
+                .wrapping_add(val2)
+                .wrapping_add(self.read_ccr(SR::X) as u32),
         };
 
-        self.write_dr(reg1, res);
+        self.write_dr(reg1, size, res);
 
         trace!("ADDX.{} D{} D{}", size, reg1, reg2);
         set_ccr(self, val1, val2, res, size);
@@ -82,7 +95,7 @@ impl<'a> Cpu<'a> {
         };
         self.write_ea(ea, size, res);
         trace!("ADD D{} {}", dreg, ea);
-        set_ccr(self, val1, val2, res.into(), size);        
+        set_ccr(self, val1, val2, res.into(), size);
     }
 
     fn add_data(&mut self, inst: u16) {
@@ -96,9 +109,9 @@ impl<'a> Cpu<'a> {
             Size::Word => Value::Word((val1 as u16).wrapping_add(val2 as u16)),
             Size::Long => Value::Long((val1).wrapping_add(val2)),
         };
-        self.write_dr(dreg, res.into());
+        self.write_dr(dreg, size, res.into());
         trace!("ADD {} D{}", ea, dreg);
-        set_ccr(self, val1, val2, res.into(), size);        
+        set_ccr(self, val1, val2, res.into(), size);
     }
 
     pub(crate) fn addi(&mut self, inst: u16) {

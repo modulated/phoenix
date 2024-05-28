@@ -1,5 +1,9 @@
 use super::mmu::Mmu;
-use crate::{types::ConditionCode, util::sign_transmute, vm::StatusRegister as SR};
+use crate::{
+    types::{ConditionCode, Size},
+    util::sign_transmute,
+    vm::StatusRegister as SR,
+};
 
 #[derive(Debug)]
 pub struct Cpu<'a> {
@@ -14,14 +18,14 @@ pub struct Cpu<'a> {
 
 impl<'a> Default for Cpu<'a> {
     fn default() -> Self {
-        Self { 
+        Self {
             sr: 0x2000,
             pc: Default::default(),
             data_registers: Default::default(),
             addr_registers: Default::default(),
             usp: 0x00FFFFFE,
             ssp: 0x01000000,
-            mmu: Default::default() 
+            mmu: Default::default(),
         }
     }
 }
@@ -49,7 +53,7 @@ impl<'a> Cpu<'a> {
         self.mmu.read_word(self.pc as u32 - 2)
     }
 
-    pub fn peep_word(&self) -> u16 {        
+    pub fn peep_word(&self) -> u16 {
         self.mmu.read_word(self.pc as u32)
     }
 
@@ -63,24 +67,34 @@ impl<'a> Cpu<'a> {
         self.mmu.read_long(self.pc as u32 - 4)
     }
 
-    pub fn peep_long(&self) -> u32 {        
+    pub fn peep_long(&self) -> u32 {
         self.mmu.read_long(self.pc as u32)
     }
 
     pub fn push_long(&mut self, val: u32) {
-        let new = self.read_ar(Cpu::STACK) - 4;
-        self.write_ar(Cpu::STACK, new);
+        let new = self.read_sp() - 4;
+        self.write_sp(new);
         self.mmu.write_long(new, val);
     }
 
     pub fn pop_long(&mut self) -> u32 {
-        let pc = self.read_ar(Cpu::STACK);
+        let pc = self.read_sp();
         self.write_ar(Cpu::STACK, pc + 4);
         self.mmu.read_long(pc)
     }
 
-    fn is_supervisor_mode(&self) -> bool {
+    pub fn is_supervisor_mode(&self) -> bool {
         (self.sr & 0b0010_0000_0000_0000) == 0b0010_0000_0000_0000
+    }
+
+    pub fn decrement_dr(&mut self, reg: u8, by: u32) {
+        let reg = usize::from(reg);
+        self.data_registers[reg] = self.data_registers[reg].wrapping_sub(by)
+    }
+
+    pub fn increment_dr(&mut self, reg: u8, by: u32) {
+        let reg = usize::from(reg);
+        self.data_registers[reg] = self.data_registers[reg].wrapping_add(by)
     }
 
     pub fn decrement_ar(&mut self, reg: u8, by: u32) {
@@ -140,8 +154,27 @@ impl<'a> Cpu<'a> {
         }
     }
 
-    pub fn write_dr(&mut self, reg: u8, val: u32) {
+    pub fn write_dr(&mut self, reg: u8, size: Size, val: u32) {
         assert!(reg < 8, "Indexing into non-existant Data Register");
+        match size {
+            Size::Byte => self.write_dr_byte(reg, val),
+            Size::Word => self.write_dr_word(reg, val),
+            Size::Long => self.write_dr_long(reg, val),
+        }
+        self.data_registers[usize::from(reg)] = val;
+    }
+
+    pub fn write_dr_byte(&mut self, reg: u8, val: u32) {        
+        self.data_registers[usize::from(reg)] &= 0xFFFFFF00;        
+        self.data_registers[usize::from(reg)] += val & 0xFF;        
+    }
+
+    pub fn write_dr_word(&mut self, reg: u8, val: u32) {
+        self.data_registers[usize::from(reg)] &= 0xFFFF0000;        
+        self.data_registers[usize::from(reg)] += val & 0xFFFF;
+    }
+
+    pub fn write_dr_long(&mut self, reg: u8, val: u32) {
         self.data_registers[usize::from(reg)] = val;
     }
 
@@ -153,6 +186,10 @@ impl<'a> Cpu<'a> {
         self.pc = pc.try_into().unwrap();
     }
 
+    pub fn decrement_pc(&mut self, by: usize) {
+        self.pc -= by;
+    }
+
     pub fn write_sp(&mut self, val: u32) {
         self.write_ar(Cpu::STACK, val);
     }
@@ -160,9 +197,13 @@ impl<'a> Cpu<'a> {
     pub fn read_sp(&self) -> u32 {
         self.read_ar(Cpu::STACK)
     }
-    
+
     pub fn read_sr(&self) -> u16 {
         self.sr
+    }
+
+    pub fn write_sr(&mut self, val: u16) {
+        self.sr = val;
     }
 
     pub fn read_ccr(&self, sr: StatusRegister) -> bool {
@@ -183,6 +224,10 @@ impl<'a> Cpu<'a> {
 
     pub fn read_usp(&self) -> u32 {
         self.usp
+    }
+
+    pub fn write_usp(&mut self, val: u32) {
+        self.usp = val;
     }
 
     pub fn test_cc(&self, cc: ConditionCode) -> bool {

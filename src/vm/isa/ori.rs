@@ -23,6 +23,9 @@ impl<'a> Cpu<'a> {
     }
 
     fn ori_to_sr(&mut self) {
+        if !self.is_supervisor_mode() {
+            panic!("Not supervisor")
+        }
         todo!()
     }
 

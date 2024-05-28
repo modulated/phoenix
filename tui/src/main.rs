@@ -1,9 +1,9 @@
+use clap::Parser;
 use crossterm::{
     event::{self, Event, KeyCode, KeyEventKind},
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
     ExecutableCommand,
 };
-use clap::Parser;
 use log::info;
 use memview::Memview;
 use phoenix::{Args, VM};
@@ -11,13 +11,18 @@ use ratatui::{
     prelude::*,
     widgets::{Block, Borders, Paragraph, Row, Table},
 };
-use std::{cmp::max, fs, io::{stdout, Result, Stdout, Write}, sync::{Arc, Mutex}};
 use simplelog::{ConfigBuilder, WriteLogger};
+use std::{
+    cmp::max,
+    fs,
+    io::{stdout, Result, Stdout, Write},
+    sync::{Arc, Mutex},
+};
 mod memview;
 
 #[derive(Debug, Clone)]
 struct Log {
-    pub log: Arc<Mutex<Vec<String>>>
+    pub log: Arc<Mutex<Vec<String>>>,
 }
 
 impl Write for Log {
@@ -46,7 +51,7 @@ impl Drop for Cleanup {
 }
 
 fn main() -> Result<()> {
-    let _ = Cleanup{};
+    let _ = Cleanup {};
     let args = Args::parse();
     let mut terminal = init_term()?;
     let mut mode = Mode::Paused;
@@ -57,7 +62,9 @@ fn main() -> Result<()> {
         .set_target_level(log::LevelFilter::Off)
         .set_max_level(log::LevelFilter::Off)
         .build();
-    let log = Log{log:Arc::new(Mutex::new(vec![]))};    
+    let log = Log {
+        log: Arc::new(Mutex::new(vec![])),
+    };
     let _ = WriteLogger::init(log::LevelFilter::Trace, conf, log.clone());
     info!("Starting VM");
     let mut vm = VM::new();
@@ -77,8 +84,8 @@ fn main() -> Result<()> {
         terminal.draw(|frame| {
             let layout_vert = Layout::default()
                 .direction(Direction::Vertical)
-                .constraints(Constraint::from_percentages(vec![80,20]))
-                .split(frame.size());            
+                .constraints(Constraint::from_percentages(vec![80, 20]))
+                .split(frame.size());
             let reg_block = Block::default().borders(Borders::all()).title("Registers");
             let inst_block = Block::default()
                 .borders(Borders::all())
@@ -152,12 +159,12 @@ enum Mode {
 }
 
 fn init_term() -> Result<Terminal<CrosstermBackend<Stdout>>> {
-    let default_panic = std::panic::take_hook();    
+    let default_panic = std::panic::take_hook();
     stdout().execute(EnterAlternateScreen)?;
     enable_raw_mode()?;
     let mut terminal = Terminal::new(CrosstermBackend::new(stdout()))?;
     terminal.clear()?;
-    std::panic::set_hook(Box::new(move |p|{        
+    std::panic::set_hook(Box::new(move |p| {
         disable_raw_mode().unwrap();
         stdout().execute(LeaveAlternateScreen).unwrap();
         default_panic(p);

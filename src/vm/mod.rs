@@ -17,7 +17,7 @@ pub struct VM<'a> {
 impl<'a> VM<'a> {
     pub fn new() -> Self {
         Self {
-            inst_time: 1,            
+            inst_time: 1,
             ..Default::default()
         }
     }

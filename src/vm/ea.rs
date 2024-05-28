@@ -3,25 +3,28 @@ use crate::types::{AddressingMode, ExtensionMode, Size, Value};
 use crate::util::{sign_extend_16_to_32, sign_extend_8_to_32};
 
 impl<'a> Cpu<'a> {
-    pub fn get_jmp_address(&mut self, ea: AddressingMode) -> u32 {
-        match ea {
+    pub fn get_ea(&mut self, ea: AddressingMode) -> u32 {
+        let val = match ea {
             AddressingMode::DataRegisterDirect(_) => unreachable!(),
             AddressingMode::AddressRegisterDirect(_) => unreachable!(),
             AddressingMode::AddressRegisterIndirect(r) => self.read_ar(r),
             AddressingMode::AddressRegisterIndirectPostIncrement(_) => unreachable!(),
             AddressingMode::AddressRegisterIndirectPreDecrement(_) => unreachable!(),
-            AddressingMode::AddressRegisterIndirectDisplacement(_) => todo!(),
-            AddressingMode::AddressRegisterIndirectIndex(_) => todo!(),
-            AddressingMode::Extension(e) => {
-                match e {
-                    ExtensionMode::Word => self.fetch_word() as u32,
-                    ExtensionMode::Long => self.fetch_long(),
-                    ExtensionMode::PcRelativeDisplacement => todo!(),
-                    ExtensionMode::PcRelativeIndex => todo!(),
-                    ExtensionMode::Immediate => unreachable!(),
-                }
+            AddressingMode::AddressRegisterIndirectDisplacement(r) => {
+                let displacement = self.fetch_signed_word();
+                let val = self.read_ar(r);
+                (val as i64 + displacement as i64) as u32
             }
-        }
+            AddressingMode::AddressRegisterIndirectIndex(_) => todo!(),
+            AddressingMode::Extension(e) => match e {
+                ExtensionMode::Word => self.fetch_word() as u32,
+                ExtensionMode::Long => self.fetch_long(),
+                ExtensionMode::PcRelativeDisplacement => todo!(),
+                ExtensionMode::PcRelativeIndex => todo!(),
+                ExtensionMode::Immediate => unreachable!(),
+            },
+        };
+        val & 0xFFFFFF
     }
 
     pub fn read_ea(&mut self, ea: AddressingMode, size: Size) -> Value {
@@ -34,23 +37,10 @@ impl<'a> Cpu<'a> {
     }
 
     pub fn write_ea(&mut self, ea: AddressingMode, size: Size, val: Value) {
-        use Value::*;
         match size {
-            Size::Byte => match val {
-                Byte(v) => self.write_ea_byte(ea, v),
-                Word(v) => self.write_ea_byte(ea, v as u8),
-                Long(v) => self.write_ea_byte(ea, v as u8),
-            },
-            Size::Word => match val {
-                Byte(v) => self.write_ea_word(ea, v as u16),
-                Word(v) => self.write_ea_word(ea, v),
-                Long(v) => self.write_ea_word(ea, v as u16),
-            },
-            Size::Long => match val {
-                Byte(v) => self.write_ea_long(ea, v as u32),
-                Word(v) => self.write_ea_long(ea, v as u32),
-                Long(v) => self.write_ea_long(ea, v),
-            },
+            Size::Byte => self.write_ea_byte(ea, u32::from(val) as u8),
+            Size::Word => self.write_ea_word(ea, u32::from(val) as u16),
+            Size::Long => self.write_ea_long(ea, u32::from(val)),
         }
     }
 
@@ -65,11 +55,11 @@ impl<'a> Cpu<'a> {
             }
             AddressRegisterIndirectPostIncrement(reg) => {
                 let addr = self.read_ar(reg);
-                self.increment_ar(reg, 2); // TODO: is this correct?
+                self.increment_ar(reg, 1);
                 self.mmu.read_byte(addr)
             }
             AddressRegisterIndirectPreDecrement(reg) => {
-                self.decrement_ar(reg, 2); // TODO: is this correct?
+                self.decrement_ar(reg, 1);
                 self.mmu.read_byte(self.read_ar(reg))
             }
             AddressRegisterIndirectDisplacement(reg) => {
@@ -111,17 +101,20 @@ impl<'a> Cpu<'a> {
 
     pub fn write_ea_byte(&mut self, ea: AddressingMode, val: u8) {
         match ea {
-            AddressingMode::DataRegisterDirect(reg) => self.write_dr(reg, val as u32),
+            AddressingMode::DataRegisterDirect(reg) => {
+                let val = (self.read_dr(reg) & 0xFFFFFF00) + val as u32;
+                self.write_dr(reg, Size::Byte, val);
+            }
             AddressingMode::AddressRegisterIndirect(reg) => {
                 assert!(reg < 7);
                 self.mmu.write_byte(self.read_ar(reg), val);
             }
             AddressingMode::AddressRegisterIndirectPostIncrement(reg) => {
                 self.mmu.write_byte(self.read_ar(reg), val);
-                self.increment_ar(reg, 2); // TODO is this correct?
+                self.increment_ar(reg, 1);
             }
             AddressingMode::AddressRegisterIndirectPreDecrement(reg) => {
-                self.decrement_ar(reg, 2); // TODO is this correct?
+                self.decrement_ar(reg, 1);
                 self.mmu.write_byte(self.read_ar(reg), val);
             }
             AddressingMode::AddressRegisterIndirectDisplacement(reg) => {
@@ -209,7 +202,10 @@ impl<'a> Cpu<'a> {
 
     pub fn write_ea_word(&mut self, ea: AddressingMode, val: u16) {
         match ea {
-            AddressingMode::DataRegisterDirect(reg) => self.write_dr(reg, val as u32),
+            AddressingMode::DataRegisterDirect(reg) => {
+                let val = (self.read_dr(reg) & 0xFFFF0000) + val as u32;
+                self.write_dr(reg, Size::Word, val)
+            }
             AddressingMode::AddressRegisterIndirect(reg) => {
                 assert!(reg < 7);
                 self.mmu.write_word(self.read_ar(reg), val);
@@ -314,7 +310,7 @@ impl<'a> Cpu<'a> {
 
     pub fn write_ea_long(&mut self, ea: AddressingMode, val: u32) {
         match ea {
-            AddressingMode::DataRegisterDirect(reg) => self.write_dr(reg, val),
+            AddressingMode::DataRegisterDirect(reg) => self.write_dr(reg, Size::Long, val),
             AddressingMode::AddressRegisterIndirect(reg) => {
                 assert!(reg < 7);
                 self.mmu.write_long(self.read_ar(reg), val);

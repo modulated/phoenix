@@ -17,18 +17,18 @@ Work in progress.
 ### Moves
 
 -   [x] CLR
--   [ ] EXG
+-   [x] EXG
 -   [x] LEA
 -   [x] MOVE
--   [ ] MOVEA
--   [ ] MOVEtoCCR
+-   [x] MOVEA
+-   [x] MOVEtoCCR
 -   [x] MOVEfromSR
--   [ ] MOVEtoSR
--   [ ] MOVE USP
+-   [x] MOVEtoSR
+-   [x] MOVE USP
 -   [ ] MOVEM
 -   [ ] MOVEP
 -   [x] MOVEQ
--   [ ] SWAP
+-   [x] SWAP
 
 ### Arithmetic
 
@@ -49,7 +49,7 @@ Work in progress.
 
 ### Logic
 
--   [ ] AND
+-   [x] AND
 -   [ ] ANDI
 -   [ ] ANDItoCCR
 -   [ ] ANDItoSR
@@ -58,13 +58,13 @@ Work in progress.
 -   [ ] CMPI
 -   [ ] CMPM
 -   [ ] EOR
--   [ ] EORI
+-   [x] EORI
 -   [ ] EORItoCCR
 -   [ ] EORItoSR
 -   [ ] NEG
 -   [ ] NEGX
--   [ ] NOT
--   [ ] OR
+-   [x] NOT
+-   [x] OR
 -   [x] ORI
 -   [ ] ORItoCCR
 -   [ ] ORItoSR
@@ -74,7 +74,8 @@ Work in progress.
 -   [ ] BCC
 -   [x] BRA
 -   [x] BSR
--   [ ] DBCC
+-   [x] DBCC
+-   [x] HALT
 -   [ ] ILLEGAL
 -   [x] JMP
 -   [x] JSR
@@ -94,8 +95,8 @@ Work in progress.
 
 -   [ ] CHK
 -   [x] LINK
--   [ ] PEA
--   [ ] UNLK
+-   [x] PEA
+-   [x] UNLK
 
 ### Bitwise Operations
 
@@ -105,7 +106,7 @@ Work in progress.
 -   [ ] BCLR
 -   [ ] BSET
 -   [ ] BTST
--   [ ] EXT
+-   [x] EXT
 -   [ ] LSL
 -   [ ] LSR
 -   [ ] ROL

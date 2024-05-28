@@ -1,3 +1,6 @@
 /target
 /tui/target
 .DS_Store
+*.x68
+*.s68
+*.l68
