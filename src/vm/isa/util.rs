@@ -1,10 +1,9 @@
 use log::{error, trace};
 
 use crate::{
-    types::{AddressingMode, ExtensionMode, Size, Value},
+    types::{AddressingMode, Size, Value},
     util::{
-        get_reg, get_size, is_bit_set, is_negative, sign_extend_16_to_32, sign_extend_8_to_16,
-        SizeCoding,
+        get_reg, get_size, is_bit_set, is_negative, sign_extend_16_to_32, sign_extend_8_to_16, SizeCoding
     },
     vm::cpu::Cpu,
     StatusRegister as SR, Vector,
@@ -61,13 +60,13 @@ impl<'a> Cpu<'a> {
         let ea = AddressingMode::from(inst);
         let val = self.read_sr();
         self.write_ea_word(ea, val);
-        trace!("MOVE from SR {ea}: {val:#018b}")
+        trace!("MOVE SR, {ea} ({val:#X})")
     }
 
     fn move_to_ccr(&mut self, inst: u16) {
         let ea = AddressingMode::from(inst);
         let val = 0b0001_1111 & self.read_ea_word(ea);
-        trace!("MOVE to CCR {ea} ({val:#05b})");
+        trace!("MOVE {ea} ({val:#X}), CCR");
         let new = (self.read_sr() & 0xFF00) + val;
         self.write_sr(new);
     }
@@ -79,7 +78,7 @@ impl<'a> Cpu<'a> {
         }
         let ea = AddressingMode::from(inst);
         let val = 0b1010_0111_1111_1111 & self.read_ea_word(ea);
-        trace!("MOVE TO SR {ea} ({val:#018b})");
+        trace!("MOVE {ea} ({val:#X}), SR");
         self.write_sr(val);
     }
 
@@ -88,8 +87,15 @@ impl<'a> Cpu<'a> {
         self.trap_vec(Vector::IllegalInstruction as u32);
     }
 
-    fn tst(&mut self, _inst: u16) {
-        todo!()
+    fn tst(&mut self, inst: u16) {
+        let size = get_size(inst, 6, SizeCoding::Pink);
+        let ea = AddressingMode::from(inst);
+        let val = self.read_ea(ea, size);
+        trace!("TST.{size} {ea} ({val:#X})");
+        self.write_ccr(SR::N, is_negative(val, size));        
+        self.write_ccr(SR::Z, val == 0);
+        self.write_ccr(SR::V, false);
+        self.write_ccr(SR::C, false);
     }
 
     fn tas(&mut self, _inst: u16) {
@@ -99,8 +105,7 @@ impl<'a> Cpu<'a> {
     fn trap(&mut self, inst: u16) {
         let vec = inst as u32 & 0b1111;
         error!("TRAP {vec}");
-        self.trap_vec(vec * 4 + Vector::Trap as u32);
-        todo!();        
+        self.trap_vec(vec * 4 + Vector::Trap as u32);   
     }
 
     fn link(&mut self, inst: u16) {
@@ -151,102 +156,16 @@ impl<'a> Cpu<'a> {
     }
 
     fn trapv(&mut self) {
-        todo!()
+        if self.read_ccr(SR::V) {
+            self.trap(7)
+        }
     }
 
     fn rtr(&mut self) {
         todo!()
     }
 
-    fn movem_long(&mut self, inst: u16) {
-        let ea = AddressingMode::from(inst);
-        let mask = self.fetch_word();
-
-        let start = self.read_ea_long(ea);
-        let mut cur = start;
-
-        if is_bit_set(inst, 10) {
-            // Memory to Register
-            trace!("{} MOVEM.l {ea:?}: {start} => {mask:018b}", self.read_pc());
-            assert!(match ea {
-                AddressingMode::DataRegisterDirect(_) => false,
-                AddressingMode::AddressRegisterDirect(_) => false,
-                AddressingMode::AddressRegisterIndirect(_) => true,
-                AddressingMode::AddressRegisterIndirectPostIncrement(_) => true,
-                AddressingMode::AddressRegisterIndirectPreDecrement(_) => false,
-                AddressingMode::AddressRegisterIndirectDisplacement(_) => true,
-                AddressingMode::AddressRegisterIndirectIndex(_) => true,
-                AddressingMode::Extension(e) => match e {
-                    ExtensionMode::Word => true,
-                    ExtensionMode::Long => true,
-                    ExtensionMode::PcRelativeDisplacement => true,
-                    ExtensionMode::PcRelativeIndex => true,
-                    ExtensionMode::Immediate => false,
-                },
-            });
-
-            for reg in 0..8 {
-                // Data
-                if is_bit_set(mask, reg) {
-                    let val = self.mmu.read_long(cur);
-                    self.write_dr(reg, Size::Long, val);
-                    cur += 4;
-                }
-            }
-            for reg in 0..8 {
-                // Addr
-                if is_bit_set(mask >> 8, reg) {
-                    let val = self.mmu.read_long(cur);
-                    self.write_ar(reg, val);
-                    cur += 4;
-                }
-            }
-        } else {
-            // Register to Memory
-            trace!(
-                "{}: MOVEM.l {mask:#X} => {ea:?}: {start:#X}",
-                self.read_pc()
-            );
-            assert!(match ea {
-                AddressingMode::DataRegisterDirect(_) => false,
-                AddressingMode::AddressRegisterDirect(_) => false,
-                AddressingMode::AddressRegisterIndirect(_) => true,
-                AddressingMode::AddressRegisterIndirectPostIncrement(_) => false,
-                AddressingMode::AddressRegisterIndirectPreDecrement(_) => true,
-                AddressingMode::AddressRegisterIndirectDisplacement(_) => true,
-                AddressingMode::AddressRegisterIndirectIndex(_) => true,
-                AddressingMode::Extension(e) => match e {
-                    ExtensionMode::Word => true,
-                    ExtensionMode::Long => true,
-                    ExtensionMode::PcRelativeDisplacement => false,
-                    ExtensionMode::PcRelativeIndex => false,
-                    ExtensionMode::Immediate => false,
-                },
-            });
-
-            for reg in 0..8 {
-                // D
-                if is_bit_set(mask, reg) {
-                    let val = self.read_dr(reg);
-                    self.mmu.write_long(cur, val);
-                    cur += 4;
-                }
-            }
-            for reg in 0..8 {
-                // A
-                if is_bit_set(mask >> 8, reg) {
-                    let val = self.read_ar(reg);
-                    self.mmu.write_long(cur, val);
-                    cur += 4;
-                }
-            }
-            // TODO - finish logic
-        }
-    }
-
-    fn movem_word(&mut self, _inst: u16) {
-        todo!()
-    }
+    
 
     fn move_usp(&mut self, inst: u16) {
         if !self.is_supervisor_mode() {
@@ -292,8 +211,17 @@ impl<'a> Cpu<'a> {
         todo!()
     }
 
-    fn neg(&mut self, _inst: u16) {
-        todo!()
+    fn neg(&mut self, inst: u16) {
+        let size = get_size(inst, 6, SizeCoding::Pink);
+        let ea = AddressingMode::from(inst);
+        let val = self.read_ea(ea, size);
+        trace!("NEG.{size} {ea} ({val:#X})");
+        let res = 0u32.wrapping_sub(val.into());
+        self.write_ea(ea, size, Value::Long(res));
+        self.write_ccr(SR::N, is_negative(res, size));
+        self.write_ccr(SR::Z, res == 0);
+        self.write_ccr(SR::C, true);
+        self.write_ccr(SR::V, true);
     }
 
     fn not(&mut self, inst: u16) {
@@ -305,8 +233,8 @@ impl<'a> Cpu<'a> {
         trace!("NOT.{size} {ea} ({val})");
         self.write_ccr(SR::N, is_negative(res, size));
         self.write_ccr(SR::Z, res == 0);
-        self.write_ccr(SR::V, false);
-        self.write_ccr(SR::C, false);
+        self.write_ccr(SR::V, is_negative(res, size) == is_negative(val, size));
+        self.write_ccr(SR::C, is_negative(res, size) == is_negative(val, size));
     }
 
     fn ext(&mut self, inst: u16) {

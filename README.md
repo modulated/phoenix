@@ -64,7 +64,7 @@ Work in progress.
 -   [x] EORI
 -   [x] EORItoCCR
 -   [x] EORItoSR
--   [ ] NEG
+-   [x] NEG
 -   [ ] NEGX
 -   [x] NOT
 -   [x] OR
@@ -91,8 +91,8 @@ Work in progress.
 -   [ ] STOP
 -   [ ] TAS
 -   [x] TRAP
--   [ ] TRAPV
--   [ ] TST
+-   [x] TRAPV
+-   [x] TST
 
 ### Stack
 
