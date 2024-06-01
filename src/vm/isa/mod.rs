@@ -10,6 +10,7 @@ mod div;
 mod eori;
 mod mathq;
 mod r#move;
+mod movem;
 mod mul;
 mod ori;
 mod rot;
