@@ -10,7 +10,7 @@ use crate::{
 impl<'a> Cpu<'a> {
     pub(super) fn mul_family(&mut self, inst: u16) {
         if inst >> 4 & 0b11111 == 0b10000 {
-            self.abcd(inst)
+            return self.abcd(inst)
         }
         match get_bits(inst, 3, 6) {
             0b011000..=0b011111 => self.mulu(inst),
@@ -28,8 +28,39 @@ impl<'a> Cpu<'a> {
         todo!()
     }
 
-    fn abcd(&mut self, _inst: u16) {
-        todo!()
+    fn abcd(&mut self, inst: u16) {
+        let rx = get_reg(inst, 9);
+        let ry = get_reg(inst, 0);
+        let x = self.read_ccr(SR::X) as u8;
+        let (res, carry) = if is_bit_set(inst, 3) {
+            // Addr
+            let rx = AddressingMode::AddressRegisterIndirectPreDecrement(rx);
+            let ry = AddressingMode::AddressRegisterIndirectPreDecrement(ry);
+            let vx = self.read_ea_byte(rx);
+            let vy = self.read_ea_byte(ry);
+            trace!("ABCD {ry} ({vy}), {rx} ({vx})");
+            let d1 = (vx + vy + x) % 10;
+            let d2 = (vx + vy + x) / 10;
+            let res = d1 + (d2 << 4);            
+            self.write_ea_byte(rx, res);
+            (res, d2 != 0)
+        } else {
+            // Data
+            let vx = self.read_dr(rx) as u8;
+            let vy = self.read_dr(ry) as u8;
+            trace!("ABCD D{ry}, D{rx}");
+            let d1 = (vx + vy + x) % 10;
+            let d2 = (vx + vy + x) / 10;
+            let res = d1 + (d2 << 4);
+            self.write_dr_byte(rx, res);
+            (res, d2 != 0)
+        };
+        // TODO: X and C flags incorrect        
+        self.write_ccr(SR::X, carry);       
+        self.write_ccr(SR::C, carry);
+        if res != 0 {
+            self.write_ccr(SR::Z, false);
+        }
     }
 
     fn exg(&mut self, inst: u16) {
