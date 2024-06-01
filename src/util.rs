@@ -89,6 +89,30 @@ pub(crate) fn get_size(inst: u16, idx: u8, coding: SizeCoding) -> Size {
     }
 }
 
+#[allow(dead_code)]
+pub fn nibble_to_bcd(byte: u8) -> u8 {
+    match byte {
+        0b0000 => 0b0000, // 0
+        0b0001 => 0b0001, // 1
+        0b0010 => 0b0010, // 2
+        0b0011 => 0b0011, // 3
+        0b0100 => 0b0000, // 4
+        0b0101 => 0b0001, // 5
+        0b0110 => 0b0010, // 6
+        0b0111 => 0b0011, // 7
+        0b1000 => 0b1001, // 8
+        0b1001 => 0b1001, // 9
+        _ => unreachable!()
+    }
+}
+
+#[allow(dead_code)]
+pub fn byte_to_packed_bcd(byte: u8) -> u8 {
+    let lo = nibble_to_bcd(byte & 0xF);
+    let hi = nibble_to_bcd(byte >> 4);
+    hi + lo
+}
+
 pub enum SizeCoding {
     Pink,
     Purple,
@@ -98,7 +122,7 @@ pub enum SizeCoding {
 mod test {
     use crate::{
         types::Size,
-        util::{is_negative, is_overflow},
+        util::{byte_to_packed_bcd, is_negative, is_overflow},
     };
 
     use super::{get_bits, is_bit_set, sign_extend_16_to_32, sign_transmute};
@@ -158,5 +182,11 @@ mod test {
         let a = 0x0Fu32;
         let b = 0xFAu32;
         assert!(is_overflow(a, b, a + b, Size::Byte));
+    }
+
+    #[test]
+    fn test_bcd() {
+        assert_eq!(byte_to_packed_bcd(35), 0b0011_0101);
+        assert_eq!(byte_to_packed_bcd(95), 0b1001_0101);
     }
 }
