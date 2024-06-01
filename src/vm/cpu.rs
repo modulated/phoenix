@@ -169,21 +169,21 @@ impl<'a> Cpu<'a> {
     pub fn write_dr(&mut self, reg: u8, size: Size, val: u32) {
         assert!(reg < 8, "Indexing into non-existant Data Register");
         match size {
-            Size::Byte => self.write_dr_byte(reg, val),
-            Size::Word => self.write_dr_word(reg, val),
+            Size::Byte => self.write_dr_byte(reg, val as u8),
+            Size::Word => self.write_dr_word(reg, val as u16),
             Size::Long => self.write_dr_long(reg, val),
         }
         self.data_registers[usize::from(reg)] = val;
     }
 
-    pub fn write_dr_byte(&mut self, reg: u8, val: u32) {        
+    pub fn write_dr_byte(&mut self, reg: u8, val: u8) {        
         self.data_registers[usize::from(reg)] &= 0xFFFFFF00;        
-        self.data_registers[usize::from(reg)] += val & 0xFF;        
+        self.data_registers[usize::from(reg)] += val as u32;        
     }
 
-    pub fn write_dr_word(&mut self, reg: u8, val: u32) {
+    pub fn write_dr_word(&mut self, reg: u8, val: u16) {
         self.data_registers[usize::from(reg)] &= 0xFFFF0000;        
-        self.data_registers[usize::from(reg)] += val & 0xFFFF;
+        self.data_registers[usize::from(reg)] += val as u32;
     }
 
     pub fn write_dr_long(&mut self, reg: u8, val: u32) {
