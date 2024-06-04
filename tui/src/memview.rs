@@ -37,20 +37,8 @@ impl<'a> Widget for Memview<'a> {
 
 fn format_line(ram: &[u8], idx: usize, highlighted: bool) -> String {
     if highlighted {
-        format!(
-            "=>{idx:#08X} \t{:#010b}{:08b} \t {:#04X}{:02X}\n",
-            ram[idx],
-            ram[idx + 1],
-            ram[idx],
-            ram[idx + 1]
-        )
+        format!("=>{idx:#08X}: {:#04X}{:02X}\n", ram[idx], ram[idx + 1])
     } else {
-        format!(
-            "  {idx:#08X} \t{:#010b}{:08b} \t {:#04X}{:02X}\n",
-            ram[idx],
-            ram[idx + 1],
-            ram[idx],
-            ram[idx + 1]
-        )
+        format!("  {idx:#08X}: {:#04X}{:02X}\n", ram[idx], ram[idx + 1])
     }
 }

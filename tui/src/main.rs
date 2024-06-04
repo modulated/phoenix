@@ -19,6 +19,8 @@ use std::{
     sync::{Arc, Mutex},
 };
 mod memview;
+mod stackview;
+use stackview::Stackview;
 
 #[derive(Debug, Clone)]
 struct Log {
@@ -90,6 +92,7 @@ fn main() -> Result<()> {
             let inst_block = Block::default()
                 .borders(Borders::all())
                 .title("Instructions");
+            let stack_block = Block::default().borders(Borders::all()).title("Stack");
 
             // let layout_hor = Layout::default()
             //     .direction(Direction::Horizontal)
@@ -100,6 +103,11 @@ fn main() -> Result<()> {
                 .constraints(Constraint::from_percentages(vec![50, 50]))
                 .split(layout_vert[0]);
 
+            let memory_layout = Layout::default()
+                .direction(Direction::Horizontal)
+                .constraints(Constraint::from_percentages(vec![50, 50]))
+                .split(sub_right[1]);
+
             frame.render_widget(create_log_widget(&log), layout_vert[1]);
 
             // frame.render_widget(
@@ -107,13 +115,19 @@ fn main() -> Result<()> {
             //     layout_hor[0],
             // );
             frame.render_widget(reg_block.clone(), sub_right[0]);
-            frame.render_widget(inst_block.clone(), sub_right[1]);
+            frame.render_widget(inst_block.clone(), memory_layout[0]);
+            frame.render_widget(stack_block.clone(), memory_layout[1]);
 
             frame.render_widget(create_reg_widget(&vm), reg_block.inner(sub_right[0]));
 
             frame.render_widget(
                 Memview::new(vm.cpu.mmu.get_slice(), vm.read_pc() as usize),
-                inst_block.inner(sub_right[1]),
+                inst_block.inner(memory_layout[0]),
+            );
+
+            frame.render_widget(
+                Stackview::new(vm.cpu.mmu.get_slice(), vm.cpu.read_ar(7) as usize),
+                stack_block.inner(memory_layout[1]),
             );
         })?;
 
