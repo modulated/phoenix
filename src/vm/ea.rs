@@ -261,18 +261,18 @@ impl<'a> Cpu<'a> {
                 self.mmu.read_long(addr)
             }
             AddressRegisterIndirectPreDecrement(reg) => {
-                assert!(reg < 7); // TODO: include SP
+                assert!(reg < 8);
                 self.decrement_ar(reg, 4);
                 self.mmu.read_long(self.read_ar(reg))
             }
             AddressRegisterIndirectDisplacement(reg) => {
-                assert!(reg < 7);
+                assert!(reg < 8);
                 let displacement = self.fetch_signed_word();
                 let target = (self.read_ar(reg) as i32 + displacement as i32) as u32;
                 self.mmu.read_long(target)
             }
             AddressRegisterIndirectIndex(reg) => {
-                assert!(reg < 7);
+                assert!(reg < 8);
                 let exword = self.fetch_word();
                 let ar = self.read_ar(reg);
                 let offset = self.get_index_offset(exword, Size::Long);
