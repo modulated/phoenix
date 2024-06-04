@@ -102,7 +102,7 @@ pub fn nibble_to_bcd(byte: u8) -> u8 {
         0b0111 => 0b0011, // 7
         0b1000 => 0b1001, // 8
         0b1001 => 0b1001, // 9
-        _ => unreachable!()
+        _ => unreachable!(),
     }
 }
 

@@ -10,7 +10,7 @@ use crate::{
 impl<'a> Cpu<'a> {
     pub(super) fn mul_family(&mut self, inst: u16) {
         if inst >> 4 & 0b11111 == 0b10000 {
-            return self.abcd(inst)
+            return self.abcd(inst);
         }
         match get_bits(inst, 3, 6) {
             0b011000..=0b011111 => self.mulu(inst),
@@ -41,7 +41,7 @@ impl<'a> Cpu<'a> {
             trace!("ABCD {ry} ({vy}), {rx} ({vx})");
             let d1 = (vx + vy + x) % 10;
             let d2 = (vx + vy + x) / 10;
-            let res = d1 + (d2 << 4);            
+            let res = d1 + (d2 << 4);
             self.write_ea_byte(rx, res);
             (res, d2 != 0)
         } else {
@@ -55,8 +55,8 @@ impl<'a> Cpu<'a> {
             self.write_dr_byte(rx, res);
             (res, d2 != 0)
         };
-        // TODO: X and C flags incorrect        
-        self.write_ccr(SR::X, carry);       
+        // TODO: X and C flags incorrect
+        self.write_ccr(SR::X, carry);
         self.write_ccr(SR::C, carry);
         if res != 0 {
             self.write_ccr(SR::Z, false);
@@ -101,8 +101,8 @@ impl<'a> Cpu<'a> {
         let reg = get_reg(inst, 9);
         let val1 = self.read_dr(reg);
         let ea = AddressingMode::from(inst);
-        let val2: u32 = self.read_ea(ea, size).into();    
-        let result = val1 & val2;        
+        let val2: u32 = self.read_ea(ea, size).into();
+        let result = val1 & val2;
         if is_bit_set(inst, 8) {
             // Set EA
             trace!("AND.{size} D{reg} {ea} ({val2:#X})");

@@ -79,7 +79,7 @@ impl<'a> Cpu<'a> {
 
     pub fn pop_long(&mut self) -> u32 {
         let pc = self.read_sp();
-        self.write_sp( pc + 4);
+        self.write_sp(pc + 4);
         self.mmu.read_long(pc)
     }
 
@@ -176,13 +176,13 @@ impl<'a> Cpu<'a> {
         self.data_registers[usize::from(reg)] = val;
     }
 
-    pub fn write_dr_byte(&mut self, reg: u8, val: u8) {        
-        self.data_registers[usize::from(reg)] &= 0xFFFFFF00;        
-        self.data_registers[usize::from(reg)] += val as u32;        
+    pub fn write_dr_byte(&mut self, reg: u8, val: u8) {
+        self.data_registers[usize::from(reg)] &= 0xFFFFFF00;
+        self.data_registers[usize::from(reg)] += val as u32;
     }
 
     pub fn write_dr_word(&mut self, reg: u8, val: u16) {
-        self.data_registers[usize::from(reg)] &= 0xFFFF0000;        
+        self.data_registers[usize::from(reg)] &= 0xFFFF0000;
         self.data_registers[usize::from(reg)] += val as u32;
     }
 

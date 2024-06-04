@@ -3,7 +3,8 @@ use log::{error, trace};
 use crate::{
     types::{AddressingMode, Size, Value},
     util::{
-        get_reg, get_size, is_bit_set, is_negative, sign_extend_16_to_32, sign_extend_8_to_16, SizeCoding
+        get_reg, get_size, is_bit_set, is_negative, sign_extend_16_to_32, sign_extend_8_to_16,
+        SizeCoding,
     },
     vm::cpu::Cpu,
     StatusRegister as SR, Vector,
@@ -20,11 +21,8 @@ impl<'a> Cpu<'a> {
         if (inst & 0b0000_0001_1100_0000) == 0b0000_0001_1000_0000 {
             return self.chk(inst);
         }
-        if (inst & 0b0000_1011_1100_0000) == 0b0000_1000_1000_0000 {
-            return self.movem_word(inst);
-        }
-        if (inst & 0b0000_1011_1100_0000) == 0b0000_1000_1100_0000 {
-            return self.movem_long(inst);
+        if (inst & 0b0000_1011_1000_0000) == 0b0000_1000_1000_0000 {
+            return self.movem(inst);
         }
         match inst {
             0b0100_0000_1100_0000..=0b0100_0000_1111_1111 => self.move_from_sr(inst),
@@ -92,7 +90,7 @@ impl<'a> Cpu<'a> {
         let ea = AddressingMode::from(inst);
         let val = self.read_ea(ea, size);
         trace!("TST.{size} {ea} ({val:#X})");
-        self.write_ccr(SR::N, is_negative(val, size));        
+        self.write_ccr(SR::N, is_negative(val, size));
         self.write_ccr(SR::Z, val == 0);
         self.write_ccr(SR::V, false);
         self.write_ccr(SR::C, false);
@@ -105,7 +103,7 @@ impl<'a> Cpu<'a> {
     fn trap(&mut self, inst: u16) {
         let vec = inst as u32 & 0b1111;
         error!("TRAP {vec}");
-        self.trap_vec(vec * 4 + Vector::Trap as u32);   
+        self.trap_vec(vec * 4 + Vector::Trap as u32);
     }
 
     fn link(&mut self, inst: u16) {
@@ -164,8 +162,6 @@ impl<'a> Cpu<'a> {
     fn rtr(&mut self) {
         todo!()
     }
-
-    
 
     fn move_usp(&mut self, inst: u16) {
         if !self.is_supervisor_mode() {
@@ -290,7 +286,7 @@ impl<'a> Cpu<'a> {
         if (val1 as i32) > val2 {
             self.write_ccr(SR::N, false);
             self.trap_vec(Vector::Chk as u32);
-        }        
+        }
     }
 
     fn jsr(&mut self, inst: u16) {

@@ -6,6 +6,7 @@
         "cmpm",
         "Crossterm",
         "eori",
+        "exword",
         "mathq",
         "Memview",
         "movea",
@@ -13,6 +14,9 @@
         "moveq",
         "nbcd",
         "negx",
+        "ratatui",
+        "Rect",
+        "stackview",
         "trapv",
         "unlk"
     ]
