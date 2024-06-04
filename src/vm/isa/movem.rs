@@ -6,176 +6,242 @@ use crate::{
     vm::cpu::Cpu,
 };
 
-	impl<'a> Cpu<'a> {
-	pub fn movem_long(&mut self, inst: u16) {
-		let ea = AddressingMode::from(inst);
-		let mask = self.fetch_word();
+impl<'a> Cpu<'a> {
+    pub fn movem(&mut self, inst: u16) {
+        match (is_bit_set(inst, 6), is_bit_set(inst, 10)) {
+            (false, false) => self.movem_reg_to_mem_word(inst),
+            (false, true) => self.movem_mem_to_reg_word(inst),
+            (true, false) => self.movem_reg_to_mem_long(inst),
+            (true, true) => self.movem_mem_to_reg_long(inst),
+        }
+        self.dump_stack()
+    }
 
-		let start = self.get_ea(ea);
-		let mut cur = start;
+    fn movem_mem_to_reg_long(&mut self, inst: u16) {
+        let ea = AddressingMode::from(inst);
+        let mask = self.fetch_word();
 
-		if is_bit_set(inst, 10) {
-			// Memory to Register
-			trace!("MOVEM.l {ea:?}: {start} => {mask:018b}");
-			assert!(match ea {
-				AddressingMode::DataRegisterDirect(_) => false,
-				AddressingMode::AddressRegisterDirect(_) => false,
-				AddressingMode::AddressRegisterIndirect(_) => true,
-				AddressingMode::AddressRegisterIndirectPostIncrement(_) => true,
-				AddressingMode::AddressRegisterIndirectPreDecrement(_) => false,
-				AddressingMode::AddressRegisterIndirectDisplacement(_) => true,
-				AddressingMode::AddressRegisterIndirectIndex(_) => true,
-				AddressingMode::Extension(e) => match e {
-					ExtensionMode::Word => true,
-					ExtensionMode::Long => true,
-					ExtensionMode::PcRelativeDisplacement => true,
-					ExtensionMode::PcRelativeIndex => true,
-					ExtensionMode::Immediate => false,
-				},
-			});
+        let start = self.get_ea(ea);
+        let mut cur = start;
 
-			for reg in 0..8 {
-				// Data
-				if is_bit_set(mask, reg) {
-					let val = self.mmu.read_long(cur);
-					self.write_dr(reg, Size::Long, val);
-					cur += 4;
-				}
-			}
-			let mask = mask >> 8;
-			for reg in 0..8 {
-				// Addr
-				if is_bit_set(mask, reg) {
-					let val = self.mmu.read_long(cur);
-					self.write_ar(reg, val);
-					cur += 4;
-				}
-			}
-		} else {
-			// Register to Memory
-			trace!(
-				"{}: MOVEM.l {mask:#X} => {ea:?}: {start:#X}",
-				self.read_pc()
-			);
-			assert!(match ea {
-				AddressingMode::DataRegisterDirect(_) => false,
-				AddressingMode::AddressRegisterDirect(_) => false,
-				AddressingMode::AddressRegisterIndirect(_) => true,
-				AddressingMode::AddressRegisterIndirectPostIncrement(_) => false,
-				AddressingMode::AddressRegisterIndirectPreDecrement(_) => true,
-				AddressingMode::AddressRegisterIndirectDisplacement(_) => true,
-				AddressingMode::AddressRegisterIndirectIndex(_) => true,
-				AddressingMode::Extension(e) => match e {
-					ExtensionMode::Word => true,
-					ExtensionMode::Long => true,
-					ExtensionMode::PcRelativeDisplacement => false,
-					ExtensionMode::PcRelativeIndex => false,
-					ExtensionMode::Immediate => false,
-				},
-			});
+        trace!("MOVEM.l {ea:?}: {start} => [{mask:#06X}]");
+        assert!(match ea {
+            AddressingMode::DataRegisterDirect(_) => false,
+            AddressingMode::AddressRegisterDirect(_) => false,
+            AddressingMode::AddressRegisterIndirect(_) => true,
+            AddressingMode::AddressRegisterIndirectPostIncrement(_) => true,
+            AddressingMode::AddressRegisterIndirectPreDecrement(_) => false,
+            AddressingMode::AddressRegisterIndirectDisplacement(_) => true,
+            AddressingMode::AddressRegisterIndirectIndex(_) => true,
+            AddressingMode::Extension(e) => match e {
+                ExtensionMode::Word => true,
+                ExtensionMode::Long => true,
+                ExtensionMode::PcRelativeDisplacement => true,
+                ExtensionMode::PcRelativeIndex => true,
+                ExtensionMode::Immediate => false,
+            },
+        });
 
-			for reg in 0..8 {
-				// D
-				if is_bit_set(mask, reg) {
-					let val = self.read_dr(reg);
-					self.mmu.write_long(cur, val);
-					cur += 4;
-				}
-			}
-			let mask = mask >> 8;
-			for reg in 0..8 {
-				// A
-				if is_bit_set(mask, reg) {
-					let val = self.read_ar(reg);
-					self.mmu.write_long(cur, val);
-					cur += 4;
-				}
-			}
-			// TODO - finish logic
-		}
-	}
+        for reg in 0..8 {
+            // Data
+            if is_bit_set(mask, reg) {
+                let val = self.mmu.read_long(cur);
+                self.write_dr(reg, Size::Long, val);
+                cur += 4;
+            }
+        }
+        let mask = mask >> 8;
+        for reg in 0..8 {
+            // Addr
+            if is_bit_set(mask, reg) {
+                let val = self.mmu.read_long(cur);
+                self.write_ar(reg, val);
+                cur += 4;
+            }
+        }
+    }
 
-	pub fn movem_word(&mut self, inst: u16) {
-		let ea = AddressingMode::from(inst);
-		let mask = self.fetch_word();
+    fn movem_reg_to_mem_long(&mut self, inst: u16) {
+        let ea = AddressingMode::from(inst);
+        let mask = self.fetch_word();
 
-		let start = self.get_ea(ea);
-		let mut cur = start;
+        trace!("MOVEM.l [{mask:#X}] => {ea:?}");
 
-		if is_bit_set(inst, 10) {
-			// Memory to Register
-			trace!("MOVEM.w {ea:?}: {start} => {mask:018b}");
-			assert!(match ea {
-				AddressingMode::DataRegisterDirect(_) => false,
-				AddressingMode::AddressRegisterDirect(_) => false,
-				AddressingMode::AddressRegisterIndirect(_) => true,
-				AddressingMode::AddressRegisterIndirectPostIncrement(_) => true,
-				AddressingMode::AddressRegisterIndirectPreDecrement(_) => false,
-				AddressingMode::AddressRegisterIndirectDisplacement(_) => true,
-				AddressingMode::AddressRegisterIndirectIndex(_) => true,
-				AddressingMode::Extension(e) => match e {
-					ExtensionMode::Word => true,
-					ExtensionMode::Long => true,
-					ExtensionMode::PcRelativeDisplacement => true,
-					ExtensionMode::PcRelativeIndex => true,
-					ExtensionMode::Immediate => false,
-				},
-			});
+        assert!(match ea {
+            AddressingMode::DataRegisterDirect(_) => false,
+            AddressingMode::AddressRegisterDirect(_) => false,
+            AddressingMode::AddressRegisterIndirect(_) => true,
+            AddressingMode::AddressRegisterIndirectPostIncrement(_) => false,
+            AddressingMode::AddressRegisterIndirectPreDecrement(_) => true,
+            AddressingMode::AddressRegisterIndirectDisplacement(_) => true,
+            AddressingMode::AddressRegisterIndirectIndex(_) => true,
+            AddressingMode::Extension(e) => match e {
+                ExtensionMode::Word => true,
+                ExtensionMode::Long => true,
+                ExtensionMode::PcRelativeDisplacement => false,
+                ExtensionMode::PcRelativeIndex => false,
+                ExtensionMode::Immediate => false,
+            },
+        });
 
-			for reg in 0..8 {
-				// Data
-				if is_bit_set(mask, reg) {
-					let val = self.mmu.read_word(cur);
-					self.write_dr(reg, Size::Word, val as u32);
-					cur += 2;
-				}
-			}			
-			let mask = mask >> 8;
-			for reg in 0..8 {
-				// Addr
-				if is_bit_set(mask, reg) {
-					let val = self.mmu.read_word(cur);
-					self.write_ar(reg, val as u32);
-					cur += 2;
-				}
-			}
-		} else {
-			// Register to Memory
-			trace!("MOVEM.w {mask:#X} => {ea:?}: {start:#X}");
-			assert!(match ea {
-				AddressingMode::DataRegisterDirect(_) => false,
-				AddressingMode::AddressRegisterDirect(_) => false,
-				AddressingMode::AddressRegisterIndirect(_) => true,
-				AddressingMode::AddressRegisterIndirectPostIncrement(_) => false,
-				AddressingMode::AddressRegisterIndirectPreDecrement(_) => true,
-				AddressingMode::AddressRegisterIndirectDisplacement(_) => true,
-				AddressingMode::AddressRegisterIndirectIndex(_) => true,
-				AddressingMode::Extension(e) => match e {
-					ExtensionMode::Word => true,
-					ExtensionMode::Long => true,
-					ExtensionMode::PcRelativeDisplacement => false,
-					ExtensionMode::PcRelativeIndex => false,
-					ExtensionMode::Immediate => false,
-				},
-			});
+        match ea {
+            AddressingMode::AddressRegisterIndirectPreDecrement(_) => {
+                // D0 D1 D2 D3 D4 D5 D6 D7 A0 A1 A2 A3 A4 A5 A6 A7
+                for reg in 0..8 {
+                    // Addr
+                    if is_bit_set(mask, reg) {
+                        let val = self.read_ar(7 - reg);
+                        self.write_ea_long(ea, val);
+                    }
+                }
+                let mask = mask >> 8;
+                for reg in 0..8 {
+                    // Data
+                    if is_bit_set(mask, reg) {
+                        let val = self.read_dr(7 - reg);
+                        self.write_ea_long(ea, val);
+                    }
+                }
+            }
+            _ => {
+                // A7 A6 A5 A4 A3 A2 A1 A0 D7 D6 D5 D4 D3 D2 D1 D0
+                let mut addr = self.get_ea(ea);
+                for reg in 0..8 {
+                    // Data
+                    if is_bit_set(mask, reg) {
+                        let val = self.read_dr(reg);
+                        self.mmu.write_long(addr, val);
+                        addr += 4;
+                    }
+                }
+                let mask = mask >> 8;
+                for reg in 0..8 {
+                    // Addr
+                    if is_bit_set(mask, reg) {
+                        let val = self.read_ar(reg);
+                        self.mmu.write_long(addr, val);
+                        addr += 4;
+                    }
+                }
+            }
+        };
+    }
 
-			for reg in 0..8 {
-				// D
-				if is_bit_set(mask, reg) {
-					let val = self.read_dr(reg);
-					self.mmu.write_word(cur, val as u16);
-					cur += 2;
-				}
-			}
-			let mask = mask >> 8;
-			for reg in 0..8 {
-				// A
-				if is_bit_set(mask, reg) {
-					let val = self.read_ar(reg);
-					self.mmu.write_word(cur, val as u16);
-					cur += 2;
-				}
-			}
-		}
-	}
+    pub fn movem_mem_to_reg_word(&mut self, inst: u16) {
+        let ea = AddressingMode::from(inst);
+        let mask = self.fetch_word();
+
+        let start = self.get_ea(ea);
+        let mut cur = start;
+
+        trace!("MOVEM.w {ea}: {start:#X} => [{mask:#06X}]");
+        assert!(match ea {
+            AddressingMode::DataRegisterDirect(_) => false,
+            AddressingMode::AddressRegisterDirect(_) => false,
+            AddressingMode::AddressRegisterIndirect(_) => true,
+            AddressingMode::AddressRegisterIndirectPostIncrement(_) => true,
+            AddressingMode::AddressRegisterIndirectPreDecrement(_) => false,
+            AddressingMode::AddressRegisterIndirectDisplacement(_) => true,
+            AddressingMode::AddressRegisterIndirectIndex(_) => true,
+            AddressingMode::Extension(e) => match e {
+                ExtensionMode::Word => true,
+                ExtensionMode::Long => true,
+                ExtensionMode::PcRelativeDisplacement => true,
+                ExtensionMode::PcRelativeIndex => true,
+                ExtensionMode::Immediate => false,
+            },
+        });
+
+        for reg in 0..8 {
+            // Data
+            if is_bit_set(mask, reg) {
+                let val = self.mmu.read_word(cur) as u32;
+                self.write_dr(reg, Size::Word, val);
+                cur += 2;
+            }
+        }
+        let mask = mask >> 8;
+        for reg in 0..8 {
+            // Addr
+            if is_bit_set(mask, reg) {
+                let val = self.mmu.read_word(cur) as u32;
+                self.write_ar(reg, val);
+                cur += 2;
+            }
+        }
+    }
+
+    fn movem_reg_to_mem_word(&mut self, inst: u16) {
+        let ea = AddressingMode::from(inst);
+        let mask = self.fetch_word();
+
+        trace!("MOVEM.w [{mask:#X}] => {ea}");
+
+        assert!(match ea {
+            AddressingMode::DataRegisterDirect(_) => false,
+            AddressingMode::AddressRegisterDirect(_) => false,
+            AddressingMode::AddressRegisterIndirect(_) => true,
+            AddressingMode::AddressRegisterIndirectPostIncrement(_) => false,
+            AddressingMode::AddressRegisterIndirectPreDecrement(_) => true,
+            AddressingMode::AddressRegisterIndirectDisplacement(_) => true,
+            AddressingMode::AddressRegisterIndirectIndex(_) => true,
+            AddressingMode::Extension(e) => match e {
+                ExtensionMode::Word => true,
+                ExtensionMode::Long => true,
+                ExtensionMode::PcRelativeDisplacement => false,
+                ExtensionMode::PcRelativeIndex => false,
+                ExtensionMode::Immediate => false,
+            },
+        });
+
+        match ea {
+            AddressingMode::AddressRegisterIndirectPreDecrement(_) => {
+                // D0 D1 D2 D3 D4 D5 D6 D7 A0 A1 A2 A3 A4 A5 A6 A7
+                for reg in 0..8 {
+                    // Addr
+                    if is_bit_set(mask, reg) {
+                        let val = self.read_ar(7 - reg) as u16;
+                        self.write_ea_word(ea, val);
+                    }
+                }
+                let mask = mask >> 8;
+                for reg in 0..8 {
+                    // Data
+                    if is_bit_set(mask, reg) {
+                        let val = self.read_dr(7 - reg) as u16;
+                        self.write_ea_word(ea, val);
+                    }
+                }
+            }
+            _ => {
+                // A7 A6 A5 A4 A3 A2 A1 A0 D7 D6 D5 D4 D3 D2 D1 D0
+                let mut addr = self.get_ea(ea);
+                for reg in 0..8 {
+                    // Data
+                    if is_bit_set(mask, reg) {
+                        let val = self.read_dr(reg) as u16;
+                        self.mmu.write_word(addr, val);
+                        addr += 2;
+                    }
+                }
+                let mask = mask >> 8;
+                for reg in 0..8 {
+                    // Addr
+                    if is_bit_set(mask, reg) {
+                        let val = self.read_ar(reg) as u16;
+                        self.mmu.write_word(addr, val);
+                        addr += 2;
+                    }
+                }
+            }
+        };
+    }
+
+    fn dump_stack(&self) {
+        trace!(
+            "SP: {:#X} => {:#X}",
+            self.read_sp(),
+            self.mmu.read_long(self.read_sp())
+        );
+    }
 }
