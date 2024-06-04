@@ -37,16 +37,16 @@ fn format_line(ram: &[u8], addr: usize, sp: usize) -> String {
             "=>{addr:#08X}: {:02X} {:02X} {:02X} {:02X}\n",
             ram[addr],
             ram[addr + 1],
-            ram[addr + 2],
-            ram[addr + 3]
+            ram[(addr + 2) & 0xFFFFFF],
+            ram[(addr + 3) & 0xFFFFFF]
         )
     } else {
         format!(
             "  {addr:#08X}: {:02X} {:02X} {:02X} {:02X}\n",
             ram[addr],
             ram[addr + 1],
-            ram[addr + 2],
-            ram[addr + 3]
+            ram[(addr + 2) & 0xFFFFFF],
+            ram[(addr + 3) & 0xFFFFFF]
         )
     }
 }
