@@ -57,7 +57,7 @@ impl<'a> Cpu<'a> {
         self.write_dr(reg1, size, res);
 
         trace!("ADDX.{} D{} D{}", size, reg1, reg2);
-        set_ccr(self, val1, val2, res, size);
+        add_set_ccr(self, val1, val2, res, size);
     }
 
     fn addx_addr(&mut self, inst: u16) {
@@ -95,7 +95,7 @@ impl<'a> Cpu<'a> {
         };
         self.write_ea(ea, size, res);
         trace!("ADD D{} {}", dreg, ea);
-        set_ccr(self, val1, val2, res.into(), size);
+        add_set_ccr(self, val1, val2, res.into(), size);
     }
 
     fn add_data(&mut self, inst: u16) {
@@ -111,7 +111,7 @@ impl<'a> Cpu<'a> {
         };
         self.write_dr(dreg, size, res.into());
         trace!("ADD {} D{}", ea, dreg);
-        set_ccr(self, val1, val2, res.into(), size);
+        add_set_ccr(self, val1, val2, res.into(), size);
     }
 
     pub(crate) fn addi(&mut self, inst: u16) {
@@ -130,11 +130,24 @@ impl<'a> Cpu<'a> {
         };
         trace!("ADDI.{size} {imm:#X} {ea}");
         self.write_ea(ea, size, res);
-        set_ccr(self, val, imm, res.into(), size);
+        add_set_ccr(self, val, imm, res.into(), size);
+    }
+
+    pub(crate) fn addq(&mut self, inst: u16) {
+        let data = get_bits(inst, 9, 3);
+        let imm = if data == 0 { 8 } else { data as u8 };
+        let size = get_size(inst, 6, SizeCoding::Pink);
+        let ea = AddressingMode::from(inst);
+        let val = self.read_ea(ea, size);
+        let res = val + imm;
+        trace!("ADDQ.{size} {imm}, {ea} ({val:X})");
+        self.write_ea(ea, size, res);
+        
+        add_set_ccr(self, val.into(), imm.into(), res.into(), size);
     }
 }
 
-fn set_ccr(cpu: &mut Cpu, val1: u32, val2: u32, res: u32, size: Size) {
+fn add_set_ccr(cpu: &mut Cpu, val1: u32, val2: u32, res: u32, size: Size) {
     cpu.write_ccr(SR::X, is_carry(val1, val2, res, size));
     cpu.write_ccr(SR::C, is_carry(val1, val2, res, size));
     cpu.write_ccr(SR::N, is_negative(res, size));

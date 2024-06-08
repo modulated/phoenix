@@ -2,7 +2,7 @@ use log::trace;
 
 use crate::{
     types::{AddressingMode, Size},
-    util::{get_size, is_carry, is_negative, is_overflow, sign_extend_16_to_32, SizeCoding},
+    util::{get_bits, get_size, is_carry, is_negative, is_overflow, sign_extend_16_to_32, SizeCoding},
     vm::cpu::Cpu,
     StatusRegister as SR,
 };
@@ -35,7 +35,7 @@ impl<'a> Cpu<'a> {
             Size::Long => val1.wrapping_sub(val2.into()),
         };
         self.write_ar(reg, res);
-        set_ccr(self, val1, val2.into(), res, size);
+        sub_set_ccr(self, val1, val2.into(), res, size);
     }
 
     fn sub_data(&mut self, reg: u8, ea: AddressingMode, size: Size) {
@@ -47,7 +47,7 @@ impl<'a> Cpu<'a> {
             Size::Long => self.read_ea_long(ea),
         };
         let res = val1 - val2;
-        set_ccr(self, val1, val2, res, size);
+        sub_set_ccr(self, val1, val2, res, size);
         self.write_dr(reg, size, res);
     }
 
@@ -60,12 +60,26 @@ impl<'a> Cpu<'a> {
         let size = get_size(inst, 6, SizeCoding::Pink);
         let ea = AddressingMode::from(inst);
         let val = self.read_ea(ea, size);
-        trace!("SUBI.{size} {ea:?}: {val}");
+        trace!("SUBI.{size} (IMM) {ea:?} ({val})");
         todo!()
+    }
+
+
+    pub(crate) fn subq(&mut self, inst: u16) {
+        let data = get_bits(inst, 9, 3);
+        let sub = if data == 0 { 8 } else { data as u8 };
+        let size = get_size(inst, 6, SizeCoding::Pink);
+        let ea = AddressingMode::from(inst);
+        let val = self.read_ea(ea, size);
+        let res = val - sub;
+        trace!("SUBQ.{size} {sub}, {ea} ({val:X})");
+        self.write_ea(ea, size, res);
+        
+        sub_set_ccr(self, val.into(), sub.into(), res.into(), size);
     }
 }
 
-fn set_ccr(cpu: &mut Cpu, val1: u32, val2: u32, res: u32, size: Size) {
+fn sub_set_ccr(cpu: &mut Cpu, val1: u32, val2: u32, res: u32, size: Size) {
     cpu.write_ccr(SR::X, is_carry(val1, val2, res, size));
     cpu.write_ccr(SR::C, is_carry(val1, val2, res, size));
     cpu.write_ccr(SR::N, is_negative(res, size));

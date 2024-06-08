@@ -1,10 +1,6 @@
 use log::trace;
 
-use crate::{
-    types::{AddressingMode, ConditionCode},
-    util::{get_bits, get_reg, get_size, SizeCoding},
-    vm::cpu::Cpu,
-};
+use crate::{types::ConditionCode, util::{get_bits, get_reg}, vm::cpu::Cpu};
 
 impl<'a> Cpu<'a> {
     pub(super) fn mathq_family(&mut self, inst: u16) {
@@ -19,21 +15,6 @@ impl<'a> Cpu<'a> {
         } else {
             self.addq(inst);
         }
-    }
-
-    fn addq(&mut self, _inst: u16) {
-        todo!()
-    }
-
-    fn subq(&mut self, inst: u16) {
-        let data = get_bits(inst, 9, 3);
-        let sub = if data == 0 { 8 } else { data as u8 };
-        let size = get_size(inst, 6, SizeCoding::Pink);
-        let ea = AddressingMode::from(inst);
-        let val = self.read_ea(ea, size);
-        trace!("SUBQ {sub} {ea:?}: {val:X}");
-        self.write_ea(ea, size, val - sub);
-        // TODO: flags
     }
 
     fn scc(&mut self, _inst: u16) {

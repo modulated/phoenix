@@ -1,7 +1,7 @@
 use std::{
     cmp::Eq,
     fmt::{Display, UpperHex},
-    ops::{BitOrAssign, Sub},
+    ops::{Add, BitOrAssign, Sub},
 };
 
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -61,9 +61,21 @@ impl Sub<u8> for Value {
 
     fn sub(self, rhs: u8) -> Self::Output {
         match self {
-            Value::Byte(v) => Value::Byte(v - rhs),
-            Value::Word(v) => Value::Word(v - rhs as u16),
-            Value::Long(v) => Value::Long(v - rhs as u32),
+            Value::Byte(v) => Value::Byte(v.wrapping_sub(rhs)),
+            Value::Word(v) => Value::Word(v.wrapping_sub(rhs as u16)),
+            Value::Long(v) => Value::Long(v.wrapping_sub(rhs as u32)),
+        }
+    }
+}
+
+impl Add<u8> for Value {
+    type Output = Value;
+
+    fn add(self, rhs: u8) -> Self::Output {
+        match self {
+            Value::Byte(v) => Value::Byte(v.wrapping_add(rhs)),
+            Value::Word(v) => Value::Word(v.wrapping_add(rhs as u16)),
+            Value::Long(v) => Value::Long(v.wrapping_add(rhs as u32)),
         }
     }
 }

@@ -23,7 +23,7 @@ impl<'a> Default for Cpu<'a> {
             pc: Default::default(),
             data_registers: Default::default(),
             addr_registers: Default::default(),
-            usp: 0x00FFFFFE,
+            usp: 0x00FF0000,
             ssp: 0x01000000,
             mmu: Default::default(),
         }
@@ -200,6 +200,10 @@ impl<'a> Cpu<'a> {
 
     pub fn decrement_pc(&mut self, by: usize) {
         self.pc -= by;
+    }
+
+    pub fn increment_pc(&mut self, by: usize) {
+        self.pc += by;
     }
 
     pub fn write_sp(&mut self, val: u32) {
