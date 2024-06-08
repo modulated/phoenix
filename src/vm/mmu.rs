@@ -57,7 +57,6 @@ impl<'a> Mmu<'a> {
     pub fn write_long(&mut self, addr: u32, val: u32) {
         let addr = addr as usize & 0xFFFFFF;
         assert!(addr % 2 == 0, "Memory access not word aligned!");
-        trace!("Write to {addr:#X}-{:#X}", addr + 3);
         self.ram[addr] = ((0xFF000000 & val) >> 24) as u8;
         self.ram[addr + 1] = ((0x00FF0000 & val) >> 16) as u8;
         self.ram[addr + 2] = ((0x0000FF00 & val) >> 8) as u8;
