@@ -4,8 +4,10 @@ pub struct Args {
     pub file: String,
     #[arg(long = "log", short, default_value = "warn")]
     pub log_level: log::LevelFilter,
-    #[arg(long = "pc", short, default_value = "0400")]
+    #[arg(long = "pc", short, default_value = "00")]
     pub program_counter: String,
-    #[arg(long = "sp", short, default_value = "FFFFFE")]
-    pub stack_pointer: String,
+    #[arg(long = "usp", short)]
+    pub user_stack_pointer: Option<String>,
+    #[arg(long = "ssp", short)]
+    pub system_stack_pointer: Option<String>,
 }
