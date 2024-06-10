@@ -57,7 +57,7 @@
                     "kind": "bin"
                 }
             },
-            "args": [],
+            "args": ["roms/zbug.bin", "-p400"],
             "cwd": "${workspaceFolder}"
         },
         {
