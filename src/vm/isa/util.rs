@@ -103,6 +103,9 @@ impl<'a> Cpu<'a> {
     fn trap(&mut self, inst: u16) {
         let vec = inst as u32 & 0b1111;
         error!("TRAP {vec}");
+        if vec == 15 {
+            return self.console_trap();
+        }
         self.trap_vec(vec * 4 + Vector::Trap as u32);
     }
 
