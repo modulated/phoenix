@@ -15,12 +15,26 @@ impl<'a> Cpu<'a> {
                 let val = self.read_ar(r);
                 (val as i64 + displacement as i64) as u32
             }
-            AddressingMode::AddressRegisterIndirectIndex(_) => todo!(),
+            AddressingMode::AddressRegisterIndirectIndex(reg) => {
+                let exword = self.fetch_word();
+                let ar = self.read_ar(reg);
+                let offset = self.get_index_offset(exword, Size::Byte);
+                ar + offset
+            }
             AddressingMode::Extension(e) => match e {
                 ExtensionMode::Word => self.fetch_word() as u32,
                 ExtensionMode::Long => self.fetch_long(),
-                ExtensionMode::PcRelativeDisplacement => todo!(),
-                ExtensionMode::PcRelativeIndex => todo!(),
+                ExtensionMode::PcRelativeDisplacement => {
+                    let pc = self.read_pc();
+                    let offset = sign_extend_16_to_32(self.fetch_word());
+                    (pc as i32 + offset as i32) as u32
+                }
+                ExtensionMode::PcRelativeIndex => {
+                    let pc = self.read_pc();
+                    let exword = self.fetch_word();
+                    let offset = self.get_index_offset(exword, Size::Byte);
+                    offset.wrapping_add(pc)
+                }
                 ExtensionMode::Immediate => unreachable!(),
             },
         };
@@ -298,9 +312,7 @@ impl<'a> Cpu<'a> {
                     let pc = self.read_pc();
                     let exword = self.fetch_word();
                     let offset = self.get_index_offset(exword, Size::Long);
-                    dbg_hex::dbg_hex!(offset);
                     let addr = offset.wrapping_add(pc + 2);
-                    dbg_hex::dbg_hex!(addr);
                     self.mmu.read_long(addr)
                 }
                 ExtensionMode::Immediate => self.fetch_long(),
@@ -361,18 +373,21 @@ impl<'a> Cpu<'a> {
     fn get_index_offset(&self, word: u16, size: Size) -> u32 {
         let displacement = sign_extend_8_to_32((word & 0b0000_0000_1111_1111) as u8);
         let reg = ((word & 0b0111_0000_0000_0000) >> 12) as u8;
-        let index = if (word & 0b1000_0000_0000_0000) == 0 {
+        let mut index = if (word & 0b1000_0000_0000_0000) == 0 {
             self.read_dr(reg)
         } else {
             self.read_ar(reg)
         };
         let scale = size as u32;
-        dbg!(scale);
         let reg_size = (word & 0b0000_1000_0000_0000) >> 11;
-        dbg!(reg_size);
         if reg_size == 0 {
-            todo!("word reg size?");
+            index &= 0xFFFF
         }
-        displacement + (index * scale)
+        dbg_hex::dbg_hex!(index);
+        dbg_hex::dbg_hex!(displacement);
+        dbg_hex::dbg_hex!(scale);
+        let res = displacement.wrapping_add(index * scale);
+        dbg_hex::dbg_hex!(res);
+        res
     }
 }
