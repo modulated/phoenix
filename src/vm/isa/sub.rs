@@ -2,7 +2,9 @@ use log::trace;
 
 use crate::{
     types::{AddressingMode, Size},
-    util::{get_bits, get_size, is_carry, is_negative, is_overflow, sign_extend_16_to_32, SizeCoding},
+    util::{
+        get_bits, get_size, is_carry, is_negative, is_overflow, sign_extend_16_to_32, SizeCoding,
+    },
     vm::cpu::Cpu,
     StatusRegister as SR,
 };
@@ -64,7 +66,6 @@ impl<'a> Cpu<'a> {
         todo!()
     }
 
-
     pub(crate) fn subq(&mut self, inst: u16) {
         let data = get_bits(inst, 9, 3);
         let sub = if data == 0 { 8 } else { data as u8 };
@@ -74,7 +75,7 @@ impl<'a> Cpu<'a> {
         let res = val - sub;
         trace!("SUBQ.{size} {sub}, {ea} ({val:X})");
         self.write_ea(ea, size, res);
-        
+
         sub_set_ccr(self, val.into(), sub.into(), res.into(), size);
     }
 }

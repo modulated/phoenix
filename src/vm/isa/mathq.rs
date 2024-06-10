@@ -1,6 +1,10 @@
 use log::trace;
 
-use crate::{types::ConditionCode, util::{get_bits, get_reg}, vm::cpu::Cpu};
+use crate::{
+    types::ConditionCode,
+    util::{get_bits, get_reg},
+    vm::cpu::Cpu,
+};
 
 impl<'a> Cpu<'a> {
     pub(super) fn mathq_family(&mut self, inst: u16) {

@@ -1,5 +1,3 @@
-use log::trace;
-
 pub const RAM_SIZE: usize = 0x1000000;
 
 #[derive(Debug)]

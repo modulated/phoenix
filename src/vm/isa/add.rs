@@ -142,7 +142,7 @@ impl<'a> Cpu<'a> {
         let res = val + imm;
         trace!("ADDQ.{size} {imm}, {ea} ({val:X})");
         self.write_ea(ea, size, res);
-        
+
         add_set_ccr(self, val.into(), imm.into(), res.into(), size);
     }
 }

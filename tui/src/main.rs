@@ -75,12 +75,12 @@ fn main() -> Result<()> {
         info!("PC set to {pc_addr:#X}");
     }
     if let Some(usp) = args.user_stack_pointer {
-        let usp = u32::from_str_radix(&usp, 16).expect("Could not parse USP");    
+        let usp = u32::from_str_radix(&usp, 16).expect("Could not parse USP");
         vm.cpu.write_usp(usp);
         info!("USP set to {usp:#X}");
     }
     if let Some(ssp) = args.system_stack_pointer {
-        let ssp = u32::from_str_radix(&ssp, 16).expect("Could not parse SSP");    
+        let ssp = u32::from_str_radix(&ssp, 16).expect("Could not parse SSP");
         vm.set_sp(ssp);
         info!("SSP set to {ssp:#X}");
     }

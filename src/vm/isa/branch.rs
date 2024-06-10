@@ -1,4 +1,8 @@
-use crate::{types::ConditionCode, util::{get_bits, sign_extend_8_to_16}, vm::cpu::Cpu};
+use crate::{
+    types::ConditionCode,
+    util::{get_bits, sign_extend_8_to_16},
+    vm::cpu::Cpu,
+};
 use log::trace;
 
 impl<'a> Cpu<'a> {
@@ -44,12 +48,14 @@ impl<'a> Cpu<'a> {
                 self.fetch_signed_word()
             } else {
                 disp as i16
-            };            
+            };
             trace!("B{cc} {disp:#X} ({disp})");
             self.write_pc((pc as i64 + disp as i64) as u32);
         } else {
-            trace!("B{cc} No Jump");   
-            // self.increment_pc(2);
+            trace!("B{cc} No Jump");
+            if inst & 0xFF == 0 {
+                self.increment_pc(2);
+            }
         }
     }
 }

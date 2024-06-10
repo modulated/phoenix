@@ -8,6 +8,7 @@ mod branch;
 mod cmp;
 mod div;
 mod eori;
+mod io;
 mod mathq;
 mod r#move;
 mod movem;
