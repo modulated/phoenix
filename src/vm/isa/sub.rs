@@ -2,7 +2,7 @@ use log::trace;
 
 use crate::{
     types::{AddressingMode, Size},
-    util::{get_size, is_carry, is_negative, is_overflow, sign_extend_16_to_32, SizeCoding},
+    util::{get_size, is_negative, sign_extend_16_to_32, SizeCoding},
     vm::cpu::Cpu,
     StatusRegister as SR,
 };
@@ -39,7 +39,7 @@ impl<'a> Cpu<'a> {
     }
 
     fn sub_data(&mut self, reg: u8, ea: AddressingMode, size: Size) {
-        trace!("SUB {size:?} Dn:{reg} EA:{ea:?}");
+        trace!("SUB.{size} D{reg} {ea}");
         let val1 = self.read_dr(reg);
         let val2 = match size {
             Size::Byte => self.read_ea_byte(ea) as u32,
@@ -52,7 +52,7 @@ impl<'a> Cpu<'a> {
     }
 
     fn sub_addr(&mut self, reg: u8, ea: AddressingMode, size: Size) {
-        trace!("SUB {size:?} EA:{ea:?} Dn:{reg}");
+        trace!("SUB.{size} {ea} D{reg}");
         todo!()
     }
 
@@ -66,9 +66,40 @@ impl<'a> Cpu<'a> {
 }
 
 fn set_ccr(cpu: &mut Cpu, val1: u32, val2: u32, res: u32, size: Size) {
-    cpu.write_ccr(SR::X, is_carry(val1, val2, res, size));
-    cpu.write_ccr(SR::C, is_carry(val1, val2, res, size));
+    cpu.write_ccr(SR::X, sub_set_carry(val1, val2, res, size));
+    cpu.write_ccr(SR::C, sub_set_carry(val1, val2, res, size));
     cpu.write_ccr(SR::N, is_negative(res, size));
     cpu.write_ccr(SR::Z, res == 0);
-    cpu.write_ccr(SR::V, is_overflow(val1, val2, res, size));
+    cpu.write_ccr(SR::V, sub_set_overflow(val1, val2, res, size));
+}
+
+pub fn sub_set_carry(a: u32, b: u32, res: u32, size: Size) -> bool {
+    let sa = is_negative(a, size);
+    let sb = is_negative(b, size);
+    let sc = is_negative(res, size);
+    (!sa && !sb && sc) || (sa && sb && !sc)
+}
+
+pub fn sub_set_overflow(a: u32, b: u32, res: u32, size: Size) -> bool {
+    let sa = is_negative(a, size);
+    let sb = is_negative(b, size);
+    let sc = is_negative(res, size);
+    (!sa && sb && sc) || (sa && !sb && !sc)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::sub_set_carry;
+
+    #[test]
+    fn test_carry() {
+        assert!(sub_set_carry(0b0, 0b1, 0b1111_1111, crate::types::Size::Byte));
+        assert!(!sub_set_carry(0b1000_0000, 0b1, 0b0111_1111, crate::types::Size::Byte));
+    }
+
+    #[test]
+    fn test_overflow() {
+        assert!(sub_set_carry(0b0, 0b1, 0b1111_1111, crate::types::Size::Byte));
+        assert!(!sub_set_carry(0b1000_0000, 0b1, 0b0111_1111, crate::types::Size::Byte));
+    }
 }

@@ -273,7 +273,7 @@ impl<'a> Cpu<'a> {
                 self.read_ccr(SR::N) & !self.read_ccr(SR::V)
                     | !self.read_ccr(SR::N) & self.read_ccr(SR::V)
             }
-            ConditionCode::GreatherThan => {
+            ConditionCode::GreaterThan => {
                 self.read_ccr(SR::N) & self.read_ccr(SR::V) & !self.read_ccr(SR::Z)
                     | !self.read_ccr(SR::N) & !self.read_ccr(SR::V) & !self.read_ccr(SR::Z)
             }

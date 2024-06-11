@@ -28,7 +28,7 @@ Work in progress.
 -   [x] MOVEfromSR
 -   [x] MOVEtoSR
 -   [x] MOVE USP
--   [ ] MOVEM
+-   [x] MOVEM
 -   [ ] MOVEP
 -   [x] MOVEQ
 -   [x] SWAP
@@ -42,12 +42,12 @@ Work in progress.
 -   [ ] ADDX
 -   [ ] DIVS
 -   [ ] DIVU
--   [ ] MULS
+-   [x] MULS
 -   [ ] MULU
 -   [ ] SUB
 -   [ ] SUBA
 -   [ ] SUBI
--   [ ] SUBQ
+-   [x] SUBQ
 -   [ ] SUBX
 
 ### Logic

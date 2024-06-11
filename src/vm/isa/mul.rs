@@ -2,7 +2,7 @@ use log::trace;
 
 use crate::{
     types::{AddressingMode, Size, Value},
-    util::{get_bits, get_reg, get_size, is_bit_set, is_negative, SizeCoding},
+    util::{get_bits, get_reg, get_size, is_bit_set, is_negative, is_overflow, SizeCoding},
     vm::cpu::Cpu,
     StatusRegister as SR,
 };
@@ -24,8 +24,19 @@ impl<'a> Cpu<'a> {
         todo!()
     }
 
-    fn muls(&mut self, _inst: u16) {
-        todo!()
+    fn muls(&mut self, inst: u16) {
+        let reg = get_reg(inst, 9);
+        let ea = AddressingMode::from(inst);
+        trace!("MULS.w {ea} D{reg}");
+        let val1 = self.read_ea_word(ea) as u32;
+        let val2 = self.read_dr(reg) & 0xFFFF;
+        let res = (val1 as i32 * val2 as i32) as u32;
+        self.write_dr(reg, Size::Long, res as u32);
+
+        self.write_ccr(SR::Z, res == 0);
+        self.write_ccr(SR::N, is_negative(res, Size::Long));
+        self.write_ccr(SR::V, is_overflow(val1, val2, res, Size::Long));
+        self.write_ccr(SR::N, false);
     }
 
     fn abcd(&mut self, inst: u16) {

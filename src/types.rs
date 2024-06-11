@@ -61,9 +61,9 @@ impl Sub<u8> for Value {
 
     fn sub(self, rhs: u8) -> Self::Output {
         match self {
-            Value::Byte(v) => Value::Byte(v - rhs),
-            Value::Word(v) => Value::Word(v - rhs as u16),
-            Value::Long(v) => Value::Long(v - rhs as u32),
+            Value::Byte(v) => Value::Byte(v.wrapping_sub(rhs)),
+            Value::Word(v) => Value::Word(v.wrapping_sub(rhs as u16)),
+            Value::Long(v) => Value::Long(v.wrapping_sub(rhs as u32)),
         }
     }
 }
@@ -204,11 +204,11 @@ impl Display for AddressingMode {
             AddressingMode::AddressRegisterIndirectDisplacement(r) => write!(f, "(d16,A{})", r),
             AddressingMode::AddressRegisterIndirectIndex(r) => write!(f, "(d16,A{},Xn)", r),
             AddressingMode::Extension(e) => match e {
-                ExtensionMode::Word => write!(f, "Abs Word"),
-                ExtensionMode::Long => write!(f, "Abs Long"),
+                ExtensionMode::Word => write!(f, "Abs.W"),
+                ExtensionMode::Long => write!(f, "Abs.L"),
                 ExtensionMode::PcRelativeDisplacement => write!(f, "d16(PC)"),
                 ExtensionMode::PcRelativeIndex => write!(f, "d8(PC,Xn)"),
-                ExtensionMode::Immediate => write!(f, "Immediate"),
+                ExtensionMode::Immediate => write!(f, "Imm"),
             },
         }
     }
@@ -230,7 +230,7 @@ pub enum ConditionCode {
     Minus,
     GreaterOrEqual,
     LessThan,
-    GreatherThan,
+    GreaterThan,
     LessOrEqual,
 }
 
@@ -252,7 +252,7 @@ impl From<u8> for ConditionCode {
             0b1011 => Minus,
             0b1100 => GreaterOrEqual,
             0b1101 => LessThan,
-            0b1110 => GreatherThan,
+            0b1110 => GreaterThan,
             0b1111 => LessOrEqual,
             _ => unreachable!("Not 4 bit value"),
         }
@@ -276,7 +276,7 @@ impl Display for ConditionCode {
             ConditionCode::Minus => write!(f, "MI"),
             ConditionCode::GreaterOrEqual => write!(f, "GE"),
             ConditionCode::LessThan => write!(f, "LT"),
-            ConditionCode::GreatherThan => write!(f, "GT"),
+            ConditionCode::GreaterThan => write!(f, "GT"),
             ConditionCode::LessOrEqual => write!(f, "LE"),
         }
     }

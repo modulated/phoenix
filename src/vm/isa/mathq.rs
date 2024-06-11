@@ -1,9 +1,9 @@
 use log::trace;
 
 use crate::{
-    types::{AddressingMode, ConditionCode},
-    util::{get_bits, get_reg, get_size, SizeCoding},
-    vm::cpu::Cpu,
+    types::{AddressingMode, ConditionCode, Size, Value},
+    util::{get_bits, get_reg, get_size, is_negative, SizeCoding},
+    vm::{cpu::Cpu, isa::sub::{sub_set_carry, sub_set_overflow}}, StatusRegister as SR,
 };
 
 impl<'a> Cpu<'a> {
@@ -27,13 +27,19 @@ impl<'a> Cpu<'a> {
 
     fn subq(&mut self, inst: u16) {
         let data = get_bits(inst, 9, 3);
-        let sub = if data == 0 { 8 } else { data as u8 };
+        let val2 = if data == 0 { 8 } else { data as u32 };
         let size = get_size(inst, 6, SizeCoding::Pink);
         let ea = AddressingMode::from(inst);
-        let val = self.read_ea(ea, size);
-        trace!("SUBQ {sub} {ea:?}: {val:X}");
-        self.write_ea(ea, size, val - sub);
-        // TODO: flags
+        let val1: u32 = self.read_ea(ea, size).into();
+        trace!("SUBQ.{size} {val2} {ea} ({val1:#X})");
+        let res = val1.wrapping_sub(val2 as u32);
+        self.write_ea(ea, size, Value::Long(res));
+        
+        self.write_ccr(SR::X, sub_set_carry(val1, val2, res, size));
+        self.write_ccr(SR::N, is_negative(res, size));
+        self.write_ccr(SR::Z, res == 0);
+        self.write_ccr(SR::V, sub_set_overflow(val1, val2, res, size));
+        self.write_ccr(SR::C, sub_set_carry(val1, val2, res, size));
     }
 
     fn scc(&mut self, _inst: u16) {
@@ -58,3 +64,4 @@ impl<'a> Cpu<'a> {
         }
     }
 }
+
