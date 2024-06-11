@@ -93,13 +93,33 @@ mod tests {
 
     #[test]
     fn test_carry() {
-        assert!(sub_set_carry(0b0, 0b1, 0b1111_1111, crate::types::Size::Byte));
-        assert!(!sub_set_carry(0b1000_0000, 0b1, 0b0111_1111, crate::types::Size::Byte));
+        assert!(sub_set_carry(
+            0b0,
+            0b1,
+            0b1111_1111,
+            crate::types::Size::Byte
+        ));
+        assert!(!sub_set_carry(
+            0b1000_0000,
+            0b1,
+            0b0111_1111,
+            crate::types::Size::Byte
+        ));
     }
 
     #[test]
     fn test_overflow() {
-        assert!(sub_set_carry(0b0, 0b1, 0b1111_1111, crate::types::Size::Byte));
-        assert!(!sub_set_carry(0b1000_0000, 0b1, 0b0111_1111, crate::types::Size::Byte));
+        assert!(sub_set_carry(
+            0b0,
+            0b1,
+            0b1111_1111,
+            crate::types::Size::Byte
+        ));
+        assert!(!sub_set_carry(
+            0b1000_0000,
+            0b1,
+            0b0111_1111,
+            crate::types::Size::Byte
+        ));
     }
 }

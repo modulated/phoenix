@@ -255,7 +255,12 @@ fn create_reg_widget(vm: &VM) -> impl Widget {
                 "USP".to_string(),
                 format!("{:#010X}", vm.read_usp()),
             ]),
-            Row::new(vec!["".to_string(), "".to_string(), "".to_string(), "T S  INT   XNZVC".to_string()]),
+            Row::new(vec![
+                "".to_string(),
+                "".to_string(),
+                "".to_string(),
+                "T S  INT   XNZVC".to_string(),
+            ]),
             Row::new(vec![
                 "PC".to_string(),
                 format!("{:#010X}", vm.read_pc()),

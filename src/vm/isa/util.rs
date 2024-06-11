@@ -6,7 +6,10 @@ use crate::{
         get_reg, get_size, is_bit_set, is_negative, sign_extend_16_to_32, sign_extend_8_to_16,
         SizeCoding,
     },
-    vm::{cpu::Cpu, isa::sub::{sub_set_carry, sub_set_overflow}},
+    vm::{
+        cpu::Cpu,
+        isa::sub::{sub_set_carry, sub_set_overflow},
+    },
     StatusRegister as SR, Vector,
 };
 
@@ -224,7 +227,7 @@ impl<'a> Cpu<'a> {
         let val = self.read_ea(ea, size);
         trace!("NEG.{size} {ea} ({val:#X})");
         let res = 0u32.wrapping_sub(val.into());
-        
+
         self.write_ccr(SR::X, sub_set_carry(0, val.into(), res, size));
         self.write_ccr(SR::N, is_negative(res, size));
         self.write_ccr(SR::Z, res == 0);

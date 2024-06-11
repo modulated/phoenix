@@ -1,4 +1,8 @@
-use crate::{types::ConditionCode, util::{get_bits, sign_extend_8_to_32}, vm::cpu::Cpu};
+use crate::{
+    types::ConditionCode,
+    util::{get_bits, sign_extend_8_to_32},
+    vm::cpu::Cpu,
+};
 use log::trace;
 
 impl<'a> Cpu<'a> {
