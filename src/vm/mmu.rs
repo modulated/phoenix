@@ -68,7 +68,7 @@ impl<'a> Mmu<'a> {
 
 impl<'a> Default for Mmu<'a> {
     fn default() -> Self {
-        let rambox = vec![0; RAM_SIZE].into_boxed_slice();
+        let rambox = vec![0xFF; RAM_SIZE].into_boxed_slice();
         let ramref = Box::leak(rambox);
         Self { ram: ramref }
     }

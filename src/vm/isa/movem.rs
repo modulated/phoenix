@@ -14,7 +14,6 @@ impl<'a> Cpu<'a> {
             (true, false) => self.movem_reg_to_mem_long(inst),
             (true, true) => self.movem_mem_to_reg_long(inst),
         }
-        self.dump_stack()
     }
 
     fn movem_mem_to_reg_long(&mut self, inst: u16) {
@@ -24,7 +23,7 @@ impl<'a> Cpu<'a> {
         let start = self.get_ea(ea);
         let mut cur = start;
 
-        trace!("MOVEM.l {ea:?}: {start} => [{mask:#06X}]");
+        trace!("MOVEM.l {ea} => [{mask:#06X}]");
         assert!(match ea {
             AddressingMode::DataRegisterDirect(_) => false,
             AddressingMode::AddressRegisterDirect(_) => false,
@@ -65,7 +64,7 @@ impl<'a> Cpu<'a> {
         let ea = AddressingMode::from(inst);
         let mask = self.fetch_word();
 
-        trace!("MOVEM.l [{mask:#X}] => {ea:?}");
+        trace!("MOVEM.l [{mask:#X}] => {ea}");
 
         assert!(match ea {
             AddressingMode::DataRegisterDirect(_) => false,
@@ -134,7 +133,7 @@ impl<'a> Cpu<'a> {
         let start = self.get_ea(ea);
         let mut cur = start;
 
-        trace!("MOVEM.w {ea}: {start:#X} => [{mask:#06X}]");
+        trace!("MOVEM.w {ea} => [{mask:#06X}]");
         assert!(match ea {
             AddressingMode::DataRegisterDirect(_) => false,
             AddressingMode::AddressRegisterDirect(_) => false,
@@ -235,13 +234,5 @@ impl<'a> Cpu<'a> {
                 }
             }
         };
-    }
-
-    fn dump_stack(&self) {
-        trace!(
-            "SP: {:#X} => {:#X}",
-            self.read_sp(),
-            self.mmu.read_long(self.read_sp())
-        );
     }
 }

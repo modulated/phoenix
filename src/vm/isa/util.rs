@@ -129,7 +129,11 @@ impl<'a> Cpu<'a> {
     }
 
     fn reset(&mut self) {
-        todo!()
+        if !self.is_supervisor_mode() {
+            error!("Not supervisor");
+            self.trap_vec(Vector::PrivilegeViolation as u32);
+        }
+        trace!("RESET");
     }
 
     fn nop(&mut self) {}
@@ -147,7 +151,11 @@ impl<'a> Cpu<'a> {
             error!("Not supervisor");
             self.trap_vec(Vector::PrivilegeViolation as u32);
         }
-        todo!()
+        let sr = self.pop_word();
+        self.write_sr(sr);
+        let pc = self.pop_long();
+        self.write_pc(pc & 0xFFFFFF);
+        trace!("RTE");
     }
 
     fn rts(&mut self) {

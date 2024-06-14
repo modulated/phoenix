@@ -28,7 +28,7 @@ Work in progress.
 -   [x] MOVEfromSR
 -   [x] MOVEtoSR
 -   [x] MOVE USP
--   [ ] MOVEM
+-   [x] MOVEM
 -   [ ] MOVEP
 -   [x] MOVEQ
 -   [x] SWAP
@@ -36,18 +36,18 @@ Work in progress.
 ### Arithmetic
 
 -   [x] ADD
--   [ ] ADDA
+-   [x] ADDA
 -   [x] ADDI
--   [ ] ADDQ
+-   [x] ADDQ
 -   [ ] ADDX
 -   [ ] DIVS
 -   [ ] DIVU
 -   [ ] MULS
 -   [ ] MULU
 -   [ ] SUB
--   [ ] SUBA
+-   [x] SUBA
 -   [ ] SUBI
--   [ ] SUBQ
+-   [x] SUBQ
 -   [ ] SUBX
 
 ### Logic
@@ -74,7 +74,7 @@ Work in progress.
 
 ### Control Flow
 
--   [ ] BCC
+-   [x] BCC
 -   [x] BRA
 -   [x] BSR
 -   [x] DBCC
@@ -83,7 +83,7 @@ Work in progress.
 -   [x] JMP
 -   [x] JSR
 -   [x] NOP
--   [ ] RESET
+-   [x] RESET
 -   [ ] RTE
 -   [ ] RTR
 -   [x] RTS

@@ -56,7 +56,7 @@ impl<'a> Cpu<'a> {
 
         self.write_dr(reg1, size, res);
 
-        trace!("ADDX.{} D{} D{}", size, reg1, reg2);
+        trace!("ADDX.{} D{}, D{}", size, reg1, reg2);
         add_set_ccr(self, val1, val2, res, size);
     }
 
@@ -64,14 +64,37 @@ impl<'a> Cpu<'a> {
         let size = get_size(inst, 6, SizeCoding::Pink);
         let reg1 = get_reg(inst, 9);
         let reg2 = get_reg(inst, 0);
+        let ea1 = AddressingMode::AddressRegisterIndirectPreDecrement(reg1);
+        let ea2 = AddressingMode::AddressRegisterIndirectPreDecrement(reg2);
+        let val1: u32 = self.read_ea(ea1, size).into();
+        let val2: u32 = self.read_ea(ea2, size).into();
 
-        trace!("ADDX.{} {} {}", size, reg1, reg2);
+        let res = val1.wrapping_add(val2).wrapping_add(self.read_ccr(SR::X) as u32);
 
-        todo!()
+        trace!("ADDX.{} -(A{}), -(A{})", size, reg1, reg2);
+        add_set_ccr(self, val1, val2, res, size); // TODO - flags not right
     }
 
-    fn adda(&mut self, _inst: u16) {
-        todo!()
+    fn adda(&mut self, inst: u16) {
+        let size = if is_bit_set(inst, 8) {
+            Size::Long
+        } else {
+            Size::Word
+        };
+        let ea = AddressingMode::from(inst);
+        let val = match size {
+            Size::Word => {
+                let v = self.read_ea_word(ea);
+                sign_extend_16_to_32(v)
+            },
+            Size::Long => self.read_ea_long(ea),
+            Size::Byte => unreachable!()
+        };
+        let reg = get_reg(inst, 9);
+        let addr = self.read_ar(reg);
+        let res = addr.wrapping_add(val);
+        trace!("ADDA.{size} {ea}, A{reg}");
+        self.write_ar(reg, res);
     }
 
     fn add(&mut self, inst: u16) {
