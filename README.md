@@ -42,7 +42,7 @@ Work in progress.
 -   [ ] ADDX
 -   [ ] DIVS
 -   [ ] DIVU
--   [ ] MULS
+-   [x] MULS
 -   [ ] MULU
 -   [ ] SUB
 -   [x] SUBA

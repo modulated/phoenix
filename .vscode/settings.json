@@ -1,10 +1,12 @@
 {
     "cSpell.enableFiletypes": ["!markdown"],
     "cSpell.words": [
+        "addq",
         "andi",
         "cmpa",
         "cmpm",
         "Crossterm",
+        "dbcc",
         "eori",
         "exword",
         "mathq",
@@ -12,12 +14,20 @@
         "movea",
         "movem",
         "moveq",
+        "muls",
+        "mulu",
         "nbcd",
         "negx",
+        "opmode",
         "ratatui",
         "Rect",
+        "simplelog",
         "stackview",
+        "suba",
+        "SUBI",
+        "subq",
         "trapv",
-        "unlk"
+        "unlk",
+        "XNZVC"
     ]
 }

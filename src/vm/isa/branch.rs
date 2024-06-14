@@ -1,6 +1,6 @@
 use crate::{
     types::ConditionCode,
-    util::{get_bits, sign_extend_8_to_16},
+    util::{get_bits, sign_extend_8_to_32},
     vm::cpu::Cpu,
 };
 use log::trace;
@@ -15,28 +15,28 @@ impl<'a> Cpu<'a> {
     }
 
     fn bra(&mut self, inst: u16) {
-        let val = get_bits(inst, 0, 8);
+        let val = get_bits(inst, 0, 8) as u8;
         let pc = self.read_pc();
-        let disp = if val == 0 {
-            self.fetch_signed_word() as i64
+        let displacement = if val == 0 {
+            self.fetch_signed_word() as i32
         } else {
-            (val as i8) as i64
+            sign_extend_8_to_32(val) as i32
         };
-        trace!("BRA {disp:#X} ({disp})");
-        self.write_pc((pc as i64 + disp) as u32);
+        trace!("BRA {displacement:#X}");
+        self.write_pc((pc as i32 + displacement) as u32);
     }
 
     fn bsr(&mut self, inst: u16) {
         let val = get_bits(inst, 0, 8);
         let pc = self.read_pc();
-        let disp = if val == 0 {
+        let displacement = if val == 0 {
             self.fetch_signed_word() as i64
         } else {
             val as i64
         };
-        trace!("BSR {disp:#X}");
+        trace!("BSR {displacement:#X}");
         self.push_long(pc);
-        self.write_pc((pc as i64 + disp) as u32);
+        self.write_pc((pc as i64 + displacement) as u32);
     }
 
     fn bcc(&mut self, inst: u16) {
@@ -59,3 +59,14 @@ impl<'a> Cpu<'a> {
         }
     }
 }
+
+// #[cfg(test)]
+// mod tests {
+//     use crate::{types::ConditionCode, vm::cpu::Cpu};
+
+//     #[test]
+//     fn test_bmi() {
+//         let cpu = Cpu::default();
+//         assert!(cpu.test_cc(ConditionCode::Minus));
+//     }
+// }
