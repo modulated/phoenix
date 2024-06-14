@@ -69,7 +69,9 @@ impl<'a> Cpu<'a> {
         let val1: u32 = self.read_ea(ea1, size).into();
         let val2: u32 = self.read_ea(ea2, size).into();
 
-        let res = val1.wrapping_add(val2).wrapping_add(self.read_ccr(SR::X) as u32);
+        let res = val1
+            .wrapping_add(val2)
+            .wrapping_add(self.read_ccr(SR::X) as u32);
 
         trace!("ADDX.{} -(A{}), -(A{})", size, reg1, reg2);
         add_set_ccr(self, val1, val2, res, size); // TODO - flags not right
@@ -86,9 +88,9 @@ impl<'a> Cpu<'a> {
             Size::Word => {
                 let v = self.read_ea_word(ea);
                 sign_extend_16_to_32(v)
-            },
+            }
             Size::Long => self.read_ea_long(ea),
-            Size::Byte => unreachable!()
+            Size::Byte => unreachable!(),
         };
         let reg = get_reg(inst, 9);
         let addr = self.read_ar(reg);

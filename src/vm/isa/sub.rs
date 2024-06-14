@@ -2,9 +2,7 @@ use log::trace;
 
 use crate::{
     types::{AddressingMode, Size},
-    util::{
-        get_bits, get_size, is_carry, is_negative, is_overflow, sign_extend_16_to_32, SizeCoding,
-    },
+    util::{get_bits, get_size, is_carry, is_negative, sign_extend_16_to_32, SizeCoding},
     vm::cpu::Cpu,
     StatusRegister as SR,
 };

@@ -1,6 +1,6 @@
 use crate::{
     types::ConditionCode,
-    util::{get_bits, sign_extend_8_to_32},
+    util::{get_bits, sign_extend_8_to_16, sign_extend_8_to_32},
     vm::cpu::Cpu,
 };
 use log::trace;
