@@ -47,11 +47,11 @@ impl<'a> Cpu<'a> {
             // Addr
             let rx = AddressingMode::AddressRegisterIndirectPreDecrement(rx);
             let ry = AddressingMode::AddressRegisterIndirectPreDecrement(ry);
-            let vx = self.read_ea_byte(rx);
-            let vy = self.read_ea_byte(ry);
+            let vx = self.read_ea_byte(rx) as u32;
+            let vy = self.read_ea_byte(ry) as u32;
             trace!("ABCD {ry} ({vy}), {rx} ({vx})");
-            let d1 = (vx + vy + x) % 10;
-            let d2 = (vx + vy + x) / 10;
+            let d1 = ((vx + vy + x as u32) % 10) as u8;
+            let d2 = ((vx + vy + x as u32) / 10) as u8;
             let res = d1 + (d2 << 4);
             self.write_ea_byte(rx, res);
             (res, d2 != 0)
