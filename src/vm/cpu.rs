@@ -238,6 +238,10 @@ impl<'a> Cpu<'a> {
         self.ssp
     }
 
+    pub fn write_ssp(&mut self, val: u32) {
+        self.ssp = val;
+    }
+
     pub fn read_usp(&self) -> u32 {
         self.usp
     }
