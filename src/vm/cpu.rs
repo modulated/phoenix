@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+
 use super::mmu::Mmu;
 use crate::{
     types::{ConditionCode, Size},
@@ -5,7 +7,6 @@ use crate::{
     vm::StatusRegister as SR,
 };
 
-#[derive(Debug)]
 pub struct Cpu<'a> {
     sr: u16,
     pc: usize,
@@ -14,6 +15,19 @@ pub struct Cpu<'a> {
     usp: u32,
     ssp: u32,
     pub mmu: Mmu<'a>,
+}
+
+impl<'a> Debug for Cpu<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Cpu")
+            .field("sr", &self.sr)
+            .field("pc", &self.pc)
+            .field("data_registers", &self.data_registers)
+            .field("addr_registers", &self.addr_registers)
+            .field("usp", &self.usp)
+            .field("ssp", &self.ssp)
+            .finish()
+    }
 }
 
 impl<'a> Default for Cpu<'a> {
