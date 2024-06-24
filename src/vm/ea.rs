@@ -18,7 +18,7 @@ impl<'a> Cpu<'a> {
             AddressingMode::AddressRegisterIndirectIndex(reg) => {
                 let exword = self.fetch_word();
                 let ar = self.read_ar(reg);
-                let offset = self.get_index_offset(exword, Size::Byte);
+                let offset = self.get_index_offset(exword);
                 ar + offset
             }
             AddressingMode::Extension(e) => match e {
@@ -32,7 +32,7 @@ impl<'a> Cpu<'a> {
                 ExtensionMode::PcRelativeIndex => {
                     let pc = self.read_pc();
                     let exword = self.fetch_word();
-                    let offset = self.get_index_offset(exword, Size::Byte);
+                    let offset = self.get_index_offset(exword);
                     offset.wrapping_add(pc)
                 }
                 ExtensionMode::Immediate => unreachable!(),
@@ -83,9 +83,12 @@ impl<'a> Cpu<'a> {
                 self.mmu.read_byte(target)
             }
             AddressRegisterIndirectIndex(reg) => {
-                assert!(reg < 7);
-
-                todo!()
+                assert!(reg < 8);
+                let exword = self.fetch_word();
+                let ar = self.read_ar(reg);
+                let offset = self.get_index_offset(exword);
+                let addr = ar + offset;
+                self.mmu.read_byte(addr)
             }
             Extension(ext) => match ext {
                 ExtensionMode::Word => {
@@ -104,9 +107,11 @@ impl<'a> Cpu<'a> {
                     self.mmu.read_byte(target)
                 }
                 ExtensionMode::PcRelativeIndex => {
-                    let _pc = self.read_pc();
-                    // let index = sign_extend_8_to_32(reg);
-                    todo!();
+                    let pc = self.read_pc();
+                    let exword = self.fetch_word();
+                    let offset = self.get_index_offset(exword);
+                    let addr = offset.wrapping_add(pc + 2);
+                    self.mmu.read_byte(addr)
                 }
                 ExtensionMode::Immediate => self.fetch_word() as u8,
             },
@@ -140,7 +145,7 @@ impl<'a> Cpu<'a> {
             AddressingMode::AddressRegisterIndirectIndex(reg) => {
                 let exword = self.fetch_word();
                 let ar = self.read_ar(reg);
-                let offset = self.get_index_offset(exword, Size::Long);
+                let offset = self.get_index_offset(exword);
                 let addr = ar + offset;
                 self.mmu.write_byte(addr, val)
             }
@@ -178,15 +183,18 @@ impl<'a> Cpu<'a> {
                 self.mmu.read_word(self.read_ar(reg))
             }
             AddressRegisterIndirectDisplacement(reg) => {
-                assert!(reg < 7);
+                assert!(reg < 8);
                 let displacement = self.fetch_signed_word();
                 let target = (self.read_ar(reg) as i32 + displacement as i32) as u32;
                 self.mmu.read_word(target)
             }
             AddressRegisterIndirectIndex(reg) => {
-                assert!(reg < 7);
-                // let index = sign_extend_8_to_32(self.fetch_word() & 0x00FF);
-                todo!()
+                assert!(reg < 8);
+                let exword = self.fetch_word();
+                let ar = self.read_ar(reg);
+                let offset = self.get_index_offset(exword);
+                let addr = ar + offset;
+                self.mmu.read_word(addr)
             }
             Extension(ext) => match ext {
                 ExtensionMode::Word => {
@@ -205,9 +213,11 @@ impl<'a> Cpu<'a> {
                     self.mmu.read_word(target)
                 }
                 ExtensionMode::PcRelativeIndex => {
-                    let _pc = self.read_pc();
-                    // let index = sign_extend_8_to_32(reg);
-                    todo!();
+                    let pc = self.read_pc();
+                    let exword = self.fetch_word();
+                    let offset = self.get_index_offset(exword);
+                    let addr = offset.wrapping_add(pc + 2);
+                    self.mmu.read_word(addr)
                 }
                 ExtensionMode::Immediate => self.fetch_word(),
             },
@@ -241,7 +251,7 @@ impl<'a> Cpu<'a> {
             AddressingMode::AddressRegisterIndirectIndex(reg) => {
                 let exword = self.fetch_word();
                 let ar = self.read_ar(reg);
-                let offset = self.get_index_offset(exword, Size::Long);
+                let offset = self.get_index_offset(exword);
                 let addr = ar + offset;
                 self.mmu.write_word(addr, val)
             }
@@ -289,7 +299,7 @@ impl<'a> Cpu<'a> {
                 assert!(reg < 8);
                 let exword = self.fetch_word();
                 let ar = self.read_ar(reg);
-                let offset = self.get_index_offset(exword, Size::Long);
+                let offset = self.get_index_offset(exword);
                 let addr = ar + offset;
                 self.mmu.read_long(addr)
             }
@@ -311,7 +321,7 @@ impl<'a> Cpu<'a> {
                 ExtensionMode::PcRelativeIndex => {
                     let pc = self.read_pc();
                     let exword = self.fetch_word();
-                    let offset = self.get_index_offset(exword, Size::Long);
+                    let offset = self.get_index_offset(exword);
                     let addr = offset.wrapping_add(pc + 2);
                     self.mmu.read_long(addr)
                 }
@@ -344,7 +354,7 @@ impl<'a> Cpu<'a> {
             AddressingMode::AddressRegisterIndirectIndex(reg) => {
                 let exword = self.fetch_word();
                 let ar = self.read_ar(reg);
-                let offset = self.get_index_offset(exword, Size::Long);
+                let offset = self.get_index_offset(exword);
                 let addr = ar + offset;
                 self.mmu.write_long(addr, val)
             }
@@ -370,7 +380,7 @@ impl<'a> Cpu<'a> {
     /// A: Xi
     /// B: Xi size - 0 for word, 1 for long
     /// C: 8 bit signed displacement
-    fn get_index_offset(&self, word: u16, size: Size) -> u32 {
+    fn get_index_offset(&self, word: u16) -> u32 {
         let displacement = sign_extend_8_to_32((word & 0b0000_0000_1111_1111) as u8);
         let reg = ((word & 0b0111_0000_0000_0000) >> 12) as u8;
         let mut index = if (word & 0b1000_0000_0000_0000) == 0 {
@@ -378,16 +388,10 @@ impl<'a> Cpu<'a> {
         } else {
             self.read_ar(reg)
         };
-        let scale = size as u32;
         let reg_size = (word & 0b0000_1000_0000_0000) >> 11;
         if reg_size == 0 {
             index &= 0xFFFF
         }
-        dbg_hex::dbg_hex!(index);
-        dbg_hex::dbg_hex!(displacement);
-        dbg_hex::dbg_hex!(scale);
-        let res = displacement.wrapping_add(index * scale);
-        dbg_hex::dbg_hex!(res);
-        res
+        displacement.wrapping_add(index)
     }
 }
