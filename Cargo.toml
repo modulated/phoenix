@@ -21,3 +21,7 @@ dbg_hex = "0"
 serde = {version = "1", features = ["derive"]}
 serde_json = {version = "1"}
 datatest-stable = "0.2"
+
+[[test]]
+name = "suite"
+harness = false
