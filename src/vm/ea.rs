@@ -64,7 +64,7 @@ impl<'a> Cpu<'a> {
             DataRegisterDirect(reg) => self.read_dr(reg) as u8,
             AddressRegisterDirect(reg) => self.read_ar(reg) as u8,
             AddressRegisterIndirect(reg) => {
-                assert!(reg < 7);
+                assert!(reg < 8);
                 self.mmu.read_byte(self.read_ar(reg))
             }
             AddressRegisterIndirectPostIncrement(reg) => {
@@ -77,7 +77,7 @@ impl<'a> Cpu<'a> {
                 self.mmu.read_byte(self.read_ar(reg))
             }
             AddressRegisterIndirectDisplacement(reg) => {
-                assert!(reg < 7);
+                assert!(reg < 8);
                 let displacement = self.fetch_signed_word();
                 let target = (self.read_ar(reg) as i32 + displacement as i32) as u32;
                 self.mmu.read_byte(target)
@@ -125,7 +125,7 @@ impl<'a> Cpu<'a> {
                 self.write_dr(reg, Size::Byte, val);
             }
             AddressingMode::AddressRegisterIndirect(reg) => {
-                assert!(reg < 7);
+                assert!(reg < 8);
                 self.mmu.write_byte(self.read_ar(reg), val);
             }
             AddressingMode::AddressRegisterIndirectPostIncrement(reg) => {
@@ -137,7 +137,7 @@ impl<'a> Cpu<'a> {
                 self.mmu.write_byte(self.read_ar(reg), val);
             }
             AddressingMode::AddressRegisterIndirectDisplacement(reg) => {
-                assert!(reg < 7);
+                assert!(reg < 8);
                 let displacement = self.fetch_signed_word();
                 let target = (self.read_ar(reg) as i32 + displacement as i32) as u32;
                 self.mmu.write_byte(target, val);
@@ -170,7 +170,7 @@ impl<'a> Cpu<'a> {
             DataRegisterDirect(reg) => self.read_dr(reg) as u16,
             AddressRegisterDirect(reg) => self.read_ar(reg) as u16,
             AddressRegisterIndirect(reg) => {
-                assert!(reg < 7);
+                assert!(reg < 8);
                 self.mmu.read_word(self.read_ar(reg))
             }
             AddressRegisterIndirectPostIncrement(reg) => {
@@ -183,6 +183,7 @@ impl<'a> Cpu<'a> {
                 self.mmu.read_word(self.read_ar(reg))
             }
             AddressRegisterIndirectDisplacement(reg) => {
+                assert!(reg < 8);
                 assert!(reg < 8);
                 let displacement = self.fetch_signed_word();
                 let target = (self.read_ar(reg) as i32 + displacement as i32) as u32;
@@ -230,8 +231,13 @@ impl<'a> Cpu<'a> {
                 let val = (self.read_dr(reg) & 0xFFFF0000) + val as u32;
                 self.write_dr(reg, Size::Word, val)
             }
+            AddressingMode::AddressRegisterDirect(reg) => {
+                // TODO: is this breaking? need this hack for ADDQ + SUBQ
+                assert!(reg < 8);
+                self.write_ar(reg, val as u32)
+            }
             AddressingMode::AddressRegisterIndirect(reg) => {
-                assert!(reg < 7);
+                assert!(reg < 8);
                 self.mmu.write_word(self.read_ar(reg), val);
             }
             AddressingMode::AddressRegisterIndirectPostIncrement(reg) => {
@@ -243,7 +249,7 @@ impl<'a> Cpu<'a> {
                 self.mmu.write_word(self.read_ar(reg), val);
             }
             AddressingMode::AddressRegisterIndirectDisplacement(reg) => {
-                assert!(reg < 7);
+                assert!(reg < 8);
                 let displacement = self.fetch_signed_word();
                 let target = (self.read_ar(reg) as i32 + displacement as i32) as u32;
                 self.mmu.write_word(target, val);
@@ -266,7 +272,6 @@ impl<'a> Cpu<'a> {
                 }
                 _ => panic!("Unable to write with this Addressing Mode"),
             },
-            _ => panic!("Unable to write with this Addressing Mode"),
         }
     }
 
@@ -333,8 +338,9 @@ impl<'a> Cpu<'a> {
     pub fn write_ea_long(&mut self, ea: AddressingMode, val: u32) {
         match ea {
             AddressingMode::DataRegisterDirect(reg) => self.write_dr(reg, Size::Long, val),
+            AddressingMode::AddressRegisterDirect(reg) => self.write_ar(reg, val),
             AddressingMode::AddressRegisterIndirect(reg) => {
-                assert!(reg < 7);
+                assert!(reg < 8);
                 self.mmu.write_long(self.read_ar(reg), val);
             }
             AddressingMode::AddressRegisterIndirectPostIncrement(reg) => {
@@ -346,7 +352,7 @@ impl<'a> Cpu<'a> {
                 self.mmu.write_long(self.read_ar(reg), val);
             }
             AddressingMode::AddressRegisterIndirectDisplacement(reg) => {
-                assert!(reg < 7);
+                assert!(reg < 8);
                 let displacement = self.fetch_signed_word();
                 let target = (self.read_ar(reg) as i32 + displacement as i32) as u32;
                 self.mmu.write_long(target, val);
@@ -369,7 +375,6 @@ impl<'a> Cpu<'a> {
                 }
                 _ => panic!("Unable to write with this Addressing Mode"),
             },
-            _ => panic!("Unable to write with this Addressing Mode"),
         }
     }
 

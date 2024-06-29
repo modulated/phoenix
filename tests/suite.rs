@@ -13,6 +13,10 @@ struct TestCase {
     initial: State,
     r#final: State,
     // length: usize
+    name: String,
+    initial: State,
+    r#final: State,
+    // length: usize
 }
 
 #[derive(Deserialize)]
@@ -41,6 +45,8 @@ struct State {
 }
 
 fn read_json(file: &Path) -> Result<Vec<TestCase>, Error> {
+    let f = File::open(file).unwrap();
+    serde_json::from_reader(f)
     let f = File::open(file).unwrap();
     serde_json::from_reader(f)
 }
