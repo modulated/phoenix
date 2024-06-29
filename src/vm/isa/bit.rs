@@ -1,3 +1,5 @@
+use std::u8;
+
 use crate::types::AddressingMode;
 use crate::util::{get_bits, get_reg, is_bit_set};
 use crate::vm::Cpu;
@@ -16,7 +18,7 @@ impl<'a> Cpu<'a> {
 
     fn btst(&mut self, inst: u16) {
         let ea = AddressingMode::from(inst);
-        let modulo = if let AddressingMode::DataRegisterDirect(_) = ea {
+        let modulo: u8 = if let AddressingMode::DataRegisterDirect(_) = ea {
             32
         } else {
             8
@@ -26,11 +28,12 @@ impl<'a> Cpu<'a> {
         let res = if is_bit_set(inst, 8) {
             // Reg
             let reg = get_reg(inst, 9);
-            let bit = self.read_dr(reg) % modulo;
-            is_bit_set(val, bit as u8)
+            let bit = self.read_dr(reg) as u8 % modulo;
+            is_bit_set(val, bit)
         } else {
             // Imm
-            todo!()
+            let bit = ((self.fetch_word() & 0xFF) as u8) % modulo;
+            is_bit_set(val, bit)
         };
         self.write_ccr(SR::Z, res);
     }

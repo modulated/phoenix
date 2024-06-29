@@ -5,11 +5,7 @@ use crate::util::{sign_extend_16_to_32, sign_extend_8_to_32};
 impl<'a> Cpu<'a> {
     pub fn get_ea(&mut self, ea: AddressingMode) -> u32 {
         let val = match ea {
-            AddressingMode::DataRegisterDirect(_) => unreachable!(),
-            AddressingMode::AddressRegisterDirect(_) => unreachable!(),
             AddressingMode::AddressRegisterIndirect(r) => self.read_ar(r),
-            AddressingMode::AddressRegisterIndirectPostIncrement(_) => unreachable!(),
-            AddressingMode::AddressRegisterIndirectPreDecrement(_) => unreachable!(),
             AddressingMode::AddressRegisterIndirectDisplacement(r) => {
                 let displacement = self.fetch_signed_word();
                 let val = self.read_ar(r);
@@ -37,12 +33,16 @@ impl<'a> Cpu<'a> {
                 }
                 ExtensionMode::Immediate => unreachable!(),
             },
+            _ => unreachable!(),
         };
         val & 0xFFFFFF
     }
 
     pub fn read_ea(&mut self, ea: AddressingMode, size: Size) -> Value {
         use Value::*;
+        if let AddressingMode::AddressRegisterDirect(_) = ea {
+            return Long(self.read_ea_long(ea));
+        }
         match size {
             Size::Byte => Byte(self.read_ea_byte(ea)),
             Size::Word => Word(self.read_ea_word(ea)),
@@ -51,6 +51,9 @@ impl<'a> Cpu<'a> {
     }
 
     pub fn write_ea(&mut self, ea: AddressingMode, size: Size, val: Value) {
+        if let AddressingMode::AddressRegisterDirect(_) = ea {
+            return self.write_ea_long(ea, val.into());
+        }
         match size {
             Size::Byte => self.write_ea_byte(ea, u32::from(val) as u8),
             Size::Word => self.write_ea_word(ea, u32::from(val) as u16),
