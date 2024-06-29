@@ -235,7 +235,6 @@ impl<'a> Cpu<'a> {
                 self.write_dr(reg, Size::Word, val)
             }
             AddressingMode::AddressRegisterDirect(reg) => {
-                // TODO: is this breaking? need this hack for ADDQ + SUBQ
                 assert!(reg < 8);
                 self.write_ar(reg, val as u32)
             }

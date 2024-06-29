@@ -69,5 +69,3 @@ impl<'a> VM<'a> {
         self.cpu.data_registers.as_slice()
     }
 }
-
-// TODO builder to specify VM settings

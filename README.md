@@ -29,7 +29,7 @@ Work in progress.
 -   [x] MOVEtoSR
 -   [x] MOVE USP
 -   [x] MOVEM
--   [ ] MOVEP
+-   [x] MOVEP
 -   [x] MOVEQ
 -   [x] SWAP
 
