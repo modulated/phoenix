@@ -1,7 +1,4 @@
-use std::{
-    fs::File,
-    path::Path,
-};
+use std::{fs::File, path::Path};
 
 use phoenix::VM;
 use serde::Deserialize;
@@ -12,11 +9,6 @@ struct TestCase {
     name: String,
     initial: State,
     r#final: State,
-    // length: usize
-    name: String,
-    initial: State,
-    r#final: State,
-    // length: usize
 }
 
 #[derive(Deserialize)]
@@ -47,16 +39,14 @@ struct State {
 fn read_json(file: &Path) -> Result<Vec<TestCase>, Error> {
     let f = File::open(file).unwrap();
     serde_json::from_reader(f)
-    let f = File::open(file).unwrap();
-    serde_json::from_reader(f)
 }
 
 fn run_case(test: TestCase) {
     let mut vm = VM::new();
     let (inst, _) = test.name.split_at(4);
-    init_vm(&mut vm, test.initial, inst);    
-    vm.step();    
-    check_vm_state(&vm, test.r#final);    
+    init_vm(&mut vm, test.initial, inst);
+    vm.step();
+    check_vm_state(&vm, test.r#final);
 }
 
 fn init_vm(vm: &mut VM, state: State, inst: &str) {
@@ -114,18 +104,16 @@ fn check_vm_state(vm: &VM, state: State) {
     }
 }
 
-fn test_instruction(path: &Path) -> datatest_stable::Result<()> {	
-	println!("Starting {:?}", &path);
-	let op = read_json(path)?;
-	let mut runcount = 0;
-	for test in op.into_iter().take(1) {
-		run_case(test);		
-		runcount += 1;
-	}
-	println!("{runcount} run");
-	Ok(())
+fn test_instruction(path: &Path) -> datatest_stable::Result<()> {
+    println!("Starting {:?}", &path);
+    let op = read_json(path)?;
+    let mut runcount = 0;
+    for test in op.into_iter().take(1) {
+        run_case(test);
+        runcount += 1;
+    }
+    println!("{runcount} run");
+    Ok(())
 }
 
-datatest_stable::harness!(
-	test_instruction, "tests/json", r"MOVE.*\.json"
-);
+datatest_stable::harness!(test_instruction, "tests/json", r"MOVE.*\.json");

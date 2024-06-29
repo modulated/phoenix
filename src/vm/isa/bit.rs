@@ -1,6 +1,7 @@
 use crate::types::AddressingMode;
-use crate::util::{get_bits, get_reg, get_size, is_bit_set};
+use crate::util::{get_bits, get_reg, is_bit_set};
 use crate::vm::Cpu;
+use crate::StatusRegister as SR;
 
 impl<'a> Cpu<'a> {
     pub(crate) fn bit_family(&mut self, inst: u16) {
@@ -13,7 +14,7 @@ impl<'a> Cpu<'a> {
         }
     }
 
-    fn btst(&mut self, inst: u16) {        
+    fn btst(&mut self, inst: u16) {
         let ea = AddressingMode::from(inst);
         let modulo = if let AddressingMode::DataRegisterDirect(_) = ea {
             32
@@ -29,8 +30,9 @@ impl<'a> Cpu<'a> {
             is_bit_set(val, bit as u8)
         } else {
             // Imm
-
-        }
+            todo!()
+        };
+        self.write_ccr(SR::Z, res);
     }
 
     fn bchg(&mut self, _inst: u16) {
