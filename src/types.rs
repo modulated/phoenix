@@ -11,6 +11,16 @@ pub enum Size {
     Long = 4,
 }
 
+impl Size {
+    pub fn bits(&self) -> u8 {
+        match self {
+            Self::Byte => 8,
+            Self::Word => 16,
+            Self::Long => 32,
+        }
+    }
+}
+
 impl Display for Size {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -52,6 +62,22 @@ impl Value {
                     val & (1 << idx) == (1 << idx)
                 }
             }
+        }
+    }
+
+    pub fn rotate_left(&mut self, n: u32) {
+        *self = match self {
+            Value::Byte(v) => Value::Byte(v.rotate_left(n)),
+            Value::Word(v) => Value::Word(v.rotate_left(n)),
+            Value::Long(v) => Value::Long(v.rotate_left(n)),
+        }
+    }
+
+    pub fn rotate_right(&mut self, n: u32) {
+        *self = match self {
+            Value::Byte(v) => Value::Byte(v.rotate_right(n)),
+            Value::Word(v) => Value::Word(v.rotate_right(n)),
+            Value::Long(v) => Value::Long(v.rotate_right(n)),
         }
     }
 }

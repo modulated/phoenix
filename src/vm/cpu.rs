@@ -1,8 +1,10 @@
 use std::fmt::Debug;
 
+use log::trace;
+
 use super::mmu::Mmu;
 use crate::{
-    types::{ConditionCode, Size},
+    types::{ConditionCode, Size, Value},
     util::sign_transmute,
     vm::StatusRegister as SR,
 };
@@ -167,6 +169,14 @@ impl<'a> Cpu<'a> {
         self.data_registers[usize::from(reg)]
     }
 
+    pub fn read_dr_sized(&self, reg: u8, size: Size) -> Value {
+        match size {
+            Size::Byte => Value::Byte(self.data_registers[usize::from(reg)] as u8),
+            Size::Word => Value::Word(self.data_registers[usize::from(reg)] as u16),
+            Size::Long => Value::Long(self.data_registers[usize::from(reg)]),
+        }
+    }
+
     pub fn write_ar(&mut self, reg: u8, val: u32) {
         assert!(reg < 8, "Indexing into non-existant Address Register");
         if reg == 7 {
@@ -187,12 +197,11 @@ impl<'a> Cpu<'a> {
             Size::Word => self.write_dr_word(reg, val as u16),
             Size::Long => self.write_dr_long(reg, val),
         }
-        self.data_registers[usize::from(reg)] = val;
     }
 
     pub fn write_dr_byte(&mut self, reg: u8, val: u8) {
         self.data_registers[usize::from(reg)] &= 0xFFFFFF00;
-        self.data_registers[usize::from(reg)] += val as u32;
+        self.data_registers[usize::from(reg)] += val as u32;        
     }
 
     pub fn write_dr_word(&mut self, reg: u8, val: u16) {
