@@ -57,7 +57,7 @@
                     "kind": "bin"
                 }
             },
-            "args": ["roms/zbug.bin", "-p400"],
+            "args": ["roms/rod.bin", "-p0"],
             "cwd": "${workspaceFolder}"
         },
         {
