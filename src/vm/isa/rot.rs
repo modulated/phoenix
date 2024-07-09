@@ -2,23 +2,25 @@ use log::trace;
 
 use crate::{
     types::{AddressingMode, Size, Value},
-    util::{get_reg, get_size, is_bit_set, SizeCoding},
+    util::{get_bits, get_reg, get_size, is_bit_set, is_negative, SizeCoding},
     vm::cpu::Cpu,
     StatusRegister as SR,
 };
 
 impl<'a> Cpu<'a> {
     pub(super) fn rot_family(&mut self, inst: u16) {
-        if (inst & 0b0000_0000_1100_0000) == 0b0000_0000_1100_0000 {
-            match (inst & 0b0000_1110_0000_0000) >> 9 {
-                0b000 => self.asd_mem(inst),
-                0b001 => self.lsd_mem(inst),
-                0b010 => self.roxd_mem(inst),
-                0b011 => self.rod_mem(inst),
+        if get_bits(inst, 6, 2) == 0b11 {
+            // Address
+            match get_bits(inst, 9, 2) {
+                0b00 => self.asd_mem(inst),
+                0b01 => self.lsd_mem(inst),
+                0b10 => self.roxd_mem(inst),
+                0b11 => self.rod_mem(inst),
                 _ => unreachable!(),
             }
         } else {
-            match (inst & 0b0000_0000_0001_1000) >> 3 {
+            // Data Register
+            match get_bits(inst, 3, 2) {
                 0b00 => self.asd_reg(inst),
                 0b01 => self.lsd_reg(inst),
                 0b10 => self.roxd_reg(inst),
@@ -83,9 +85,36 @@ impl<'a> Cpu<'a> {
     }
 
     fn rod_reg(&mut self, inst: u16) {
-        let ea = AddressingMode::from(inst);
-        trace!("ROD {ea:?}");
-        todo!()
+        let size = get_size(inst, 6, SizeCoding::Pink);  
+        let dreg = get_reg(inst, 0);      
+        let count = get_reg(inst, 9);        
+        let shift_count = if is_bit_set(inst, 5) {
+            (self.read_dr(count) % 64) as u8
+        } else if count == 0 {
+            8u8
+        } else {
+            count
+        };        
+        let mut val = self.read_dr_sized(dreg, size);        
+        let (val, c_val) = if get_bits(inst, 8, 1) == 0 {
+            // Right
+            let c_val = (shift_count % size.bits()) - 1;
+            trace!("ROR.{size} {shift_count}, D{dreg} ({c_val})");
+            val.rotate_right(shift_count as u32);           
+            (u32::from(val), is_bit_set(val,c_val))
+        } else {
+            // Left
+            let c_val = size.bits() - (shift_count % size.bits());            
+            trace!("ROL.{size} {shift_count}, D{dreg} ({c_val})");
+            val.rotate_left(shift_count as u32);
+            (u32::from(val), is_bit_set(val,c_val))
+        };
+        self.write_dr(dreg, size, val);
+        self.write_ccr(SR::N, is_negative(val, size));
+        self.write_ccr(SR::Z, val == 0);
+        self.write_ccr(SR::V, false);
+        self.write_ccr(SR::C, c_val);
+        // TODO fix trace debug - distinguish imm vs reg
     }
 
     fn asd_mem(&mut self, inst: u16) {
