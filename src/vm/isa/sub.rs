@@ -46,7 +46,7 @@ impl<'a> Cpu<'a> {
             Size::Word => self.read_ea_word(ea) as u32,
             Size::Long => self.read_ea_long(ea),
         };
-        let res = val1 - val2;
+        let res = val1.wrapping_sub(val2);
         sub_set_ccr(self, val1, val2, res, size);
         self.write_dr(reg, size, res);
     }
