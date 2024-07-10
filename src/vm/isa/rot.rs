@@ -85,29 +85,29 @@ impl<'a> Cpu<'a> {
     }
 
     fn rod_reg(&mut self, inst: u16) {
-        let size = get_size(inst, 6, SizeCoding::Pink);  
-        let dreg = get_reg(inst, 0);      
-        let count = get_reg(inst, 9);        
+        let size = get_size(inst, 6, SizeCoding::Pink);
+        let dreg = get_reg(inst, 0);
+        let count = get_reg(inst, 9);
         let shift_count = if is_bit_set(inst, 5) {
             (self.read_dr(count) % 64) as u8
         } else if count == 0 {
             8u8
         } else {
             count
-        };        
-        let mut val = self.read_dr_sized(dreg, size);        
+        };
+        let mut val = self.read_dr_sized(dreg, size);
         let (val, c_val) = if get_bits(inst, 8, 1) == 0 {
             // Right
             let c_val = (shift_count % size.bits()) - 1;
             trace!("ROR.{size} {shift_count}, D{dreg} ({c_val})");
-            val.rotate_right(shift_count as u32);           
-            (u32::from(val), is_bit_set(val,c_val))
+            val.rotate_right(shift_count as u32);
+            (u32::from(val), is_bit_set(val, c_val))
         } else {
             // Left
-            let c_val = size.bits() - (shift_count % size.bits());            
+            let c_val = size.bits() - (shift_count % size.bits());
             trace!("ROL.{size} {shift_count}, D{dreg} ({c_val})");
             val.rotate_left(shift_count as u32);
-            (u32::from(val), is_bit_set(val,c_val))
+            (u32::from(val), is_bit_set(val, c_val))
         };
         self.write_dr(dreg, size, val);
         self.write_ccr(SR::N, is_negative(val, size));

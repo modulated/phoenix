@@ -29,5 +29,9 @@
         "trapv",
         "unlk",
         "XNZVC"
-    ]
+    ],
+    "cSpell.ignoreWords": ["rustfmt"],
+    "search.exclude": {
+        "**/*.json": true
+    }
 }

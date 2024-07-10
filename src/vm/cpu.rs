@@ -1,7 +1,5 @@
 use std::fmt::Debug;
 
-use log::trace;
-
 use super::mmu::Mmu;
 use crate::{
     types::{ConditionCode, Size, Value},
@@ -201,7 +199,7 @@ impl<'a> Cpu<'a> {
 
     pub fn write_dr_byte(&mut self, reg: u8, val: u8) {
         self.data_registers[usize::from(reg)] &= 0xFFFFFF00;
-        self.data_registers[usize::from(reg)] += val as u32;        
+        self.data_registers[usize::from(reg)] += val as u32;
     }
 
     pub fn write_dr_word(&mut self, reg: u8, val: u16) {
